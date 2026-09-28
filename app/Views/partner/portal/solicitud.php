@@ -23,7 +23,8 @@
     <div class="wiz-line"><i id="wiz-bar"></i></div>
 </div>
 
-<form method="post" action="<?= base_url($slug . '/portal/solicitud') ?>" id="sol-form" data-mon="<?= esc($mon) ?>" data-tasa="<?= esc(number_format((float) ($tenant['tasa_interes'] ?? 3), 2, '.', '')) ?>" novalidate>
+<form method="post" action="<?= base_url($slug . '/portal/solicitud') ?>" id="sol-form" data-mon="<?= esc($mon) ?>" data-tasa="<?= esc(number_format((float) ($tenant['tasa_interes'] ?? 3), 2, '.', '')) ?>"
+      data-tipo="<?= esc($tenant['tipo_calculo'] ?? 'FLAT') ?>" novalidate>
     <?= csrf_field() ?>
 
     <!-- ===== PASO 1 · Cliente ===== -->
@@ -125,20 +126,20 @@
 
         <div class="calc-field">
             <div class="calc-field-head"><label>Monto del préstamo</label><output class="calc-val" id="sol-monto-lbl"><?= esc($mon) ?> 10,000</output></div>
-            <input type="range" class="calc-range" id="monto" name="monto" min="1000" max="10000" step="500" value="<?= esc(old('monto', 10000)) ?>">
+            <input type="number" class="calc-num" id="monto" name="monto" min="1000" max="10000" step="500" inputmode="decimal" value="<?= esc(old('monto', 10000)) ?>">
             <p class="geo-hint" id="sol-limite-lbl">Máximo para este cliente: <?= esc($mon) ?> 10,000</p>
         </div>
         <?php $tasaMax = (float) ($tenant['tasa_interes'] ?? 3); ?>
         <div class="calc-field">
             <div class="calc-field-head"><label>Tasa mensual</label><output class="calc-val" id="sol-tasa-lbl"><?= number_format($tasaMax, 2) ?>%</output></div>
-            <input type="range" class="calc-range" id="tasa_mensual" name="tasa_mensual"
-                   min="0" max="<?= esc(number_format($tasaMax, 2, '.', '')) ?>" step="0.25"
+            <input type="number" class="calc-num" id="tasa_mensual" name="tasa_mensual"
+                   min="0" max="<?= esc(number_format($tasaMax, 2, '.', '')) ?>" step="0.25" inputmode="decimal"
                    value="<?= esc(old('tasa_mensual', number_format($tasaMax, 2, '.', ''))) ?>">
             <p class="geo-hint">Podés bajarla para negociar — el máximo es la tasa de la empresa (<?= number_format($tasaMax, 2) ?>%).</p>
         </div>
         <div class="calc-field">
             <div class="calc-field-head"><label>Plazo del préstamo</label><output class="calc-val" id="sol-plazo-lbl"><?= (int) old('plazo_meses', min(12, (int) ($tenant['plazo_meses_max'] ?? 60))) ?> meses</output></div>
-            <input type="range" class="calc-range" id="plazo_meses" name="plazo_meses" min="3" max="<?= (int) ($tenant['plazo_meses_max'] ?? 60) ?>" step="1" value="<?= esc(old('plazo_meses', min(12, (int) ($tenant['plazo_meses_max'] ?? 60)))) ?>">
+            <input type="number" class="calc-num" id="plazo_meses" name="plazo_meses" min="3" max="<?= (int) ($tenant['plazo_meses_max'] ?? 60) ?>" step="1" inputmode="numeric" value="<?= esc(old('plazo_meses', min(12, (int) ($tenant['plazo_meses_max'] ?? 60)))) ?>">
         </div>
 
         <div class="form-group">
@@ -154,7 +155,7 @@
         </div>
         <div class="calc-dias" id="sol-dias-wrap" hidden>
             <label for="dias_semana">Días de pago por semana (diario intermitente)</label>
-            <input type="range" class="calc-range" id="dias_semana" name="dias_semana" min="1" max="7" step="1" value="3">
+            <input type="number" class="calc-num" id="dias_semana" name="dias_semana" min="1" max="7" step="1" inputmode="numeric" value="3">
             <div class="calc-dias-lbl"><output id="sol-dias-lbl">3 días / semana</output></div>
         </div>
 

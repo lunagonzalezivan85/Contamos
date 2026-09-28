@@ -10,6 +10,8 @@
 
     var mon  = form.dataset.mon || 'C$';
     var TASA_MAX = parseFloat(form.dataset.tasa) || 0;   // tope del tenant — el gestor puede bajarla
+    var TIPO     = form.dataset.tipo || 'FLAT';          // método de cálculo del tenant (config)
+    var TIPO_LBL = { FRANCES: 'Francés', FLAT: 'Flat', ALEMAN: 'Alemán', ANTICIPADO: 'Anticipado' };
     var LIM_DEFECTO = 10000;                          // tope de cliente nuevo
 
     var panes  = document.querySelectorAll('.wiz-pane');
@@ -168,8 +170,15 @@
         var pagosPorMes = freq === 'DI' ? 4 * dias : (freqPagos[freq] || 1);
         var iP = i / pagosPorMes;
         var n  = Math.max(1, Math.round(meses * pagosPorMes));
-        var cuota = iP > 0 ? P * iP * Math.pow(1 + iP, n) / (Math.pow(1 + iP, n) - 1) : (P / n || 0);
-        return { P: P, i: i, meses: meses, dias: dias, n: n, cuota: cuota };
+        var cuota;   // cuota representativa según el método del tenant
+        if (TIPO === 'FLAT' || TIPO === 'ALEMAN') {    // alemán: muestra la 1ra (mayor)
+            cuota = P / n + P * iP;
+        } else if (TIPO === 'ANTICIPADO') {
+            cuota = P / n;                             // solo capital — el interés se descuenta al entregar
+        } else { // FRANCES
+            cuota = iP > 0 ? P * iP * Math.pow(1 + iP, n) / (Math.pow(1 + iP, n) - 1) : (P / n || 0);
+        }
+        return { P: P, i: i, iP: iP, meses: meses, dias: dias, n: n, cuota: cuota };
     }
 
     function calcular() {
@@ -178,7 +187,8 @@
         lblTasa.textContent   = (d.i * 100).toFixed(2) + '%';
         lblPlazo.textContent  = d.meses + (d.meses === 1 ? ' mes' : ' meses');
         diasLbl.textContent   = d.dias + (d.dias === 1 ? ' día' : ' días') + ' / semana';
-        lblCuota.textContent  = (freqLbl[freq] ? 'Cuota ' + freqLbl[freq].toLowerCase() : 'Cuota') + ' estimada';
+        lblCuota.textContent  = (freqLbl[freq] ? 'Cuota ' + freqLbl[freq].toLowerCase() : 'Cuota')
+            + ' estimada · ' + (TIPO_LBL[TIPO] || TIPO);
         prevCuota.textContent = fmt(d.cuota) + ' × ' + d.n;
     }
     [montoIn, tasaIn, plazoIn].forEach(function (el) { el.addEventListener('input', calcular); });
@@ -218,6 +228,7 @@
             '<div class="sol-row"><span>Tasa mensual</span><strong>' + (d.i * 100).toFixed(2) + '%</strong></div>' +
             '<div class="sol-row"><span>Plazo</span><strong>' + d.meses + ' meses</strong></div>' +
             '<div class="sol-row"><span>Frecuencia</span><strong>' + f + '</strong></div>' +
+            '<div class="sol-row"><span>Método</span><strong>' + (TIPO_LBL[TIPO] || TIPO) + '</strong></div>' +
             '<div class="sol-row sol-cuota"><span>Cuota estimada</span><strong>' + fmt(d.cuota) + ' × ' + d.n + ' pagos</strong></div>';
     }
 
@@ -278,28 +289,34 @@
             inicioIn.value = sumarPaso(new Date()).toISOString().slice(0, 10);
         }
 
-        var ppm = freq === 'DI' ? 4 * d.dias : (freqPagos[freq] || 1);
-        var iP  = d.i / ppm;
+        var iP  = d.iP;
+        var cFr = iP > 0 ? d.P * iP * Math.pow(1 + iP, d.n) / (Math.pow(1 + iP, d.n) - 1) : d.P / d.n;
         var f   = new Date(inicioIn.value + 'T12:00:00');
         var saldo = d.P, totInt = 0, html = '';
         for (var k = 1; k <= d.n; k++) {
-            var interes = saldo * iP;
-            var capital = d.cuota - interes;
+            var capital, interes, cuotaI, last = k === d.n;
+            if (TIPO === 'FLAT')            { capital = d.P / d.n; interes = d.P * iP; cuotaI = last ? saldo + interes : capital + interes; }
+            else if (TIPO === 'ALEMAN')     { capital = last ? saldo : d.P / d.n; interes = saldo * iP; cuotaI = capital + interes; }
+            else if (TIPO === 'ANTICIPADO') { capital = last ? saldo : d.P / d.n; interes = 0; cuotaI = capital; }
+            else /* FRANCES */              { interes = saldo * iP; capital = last ? saldo : cFr - interes; cuotaI = last ? capital + interes : cFr; }
             saldo = Math.max(0, saldo - capital);
             totInt += interes;
             html += '<tr><td>' + k + '</td><td style="white-space:nowrap;">' +
                 f.toLocaleDateString('es-NI', {day:'2-digit', month:'2-digit', year:'numeric'}) +
-                '</td><td style="text-align:right;">' + fmt(d.cuota) +
+                '</td><td style="text-align:right;">' + fmt(cuotaI) +
                 '</td><td style="text-align:right;">' + fmt(interes) +
                 '</td><td style="text-align:right;">' + fmt(saldo) + '</td></tr>';
             f = sumarPaso(f);
         }
         planModal.querySelector('#plan-tbl tbody').innerHTML = html;
         document.getElementById('plan-title').textContent =
-            'Plan ' + (freqLbl[freq] || '').toLowerCase() + ' — ' + d.n + ' pagos';
+            'Plan ' + (freqLbl[freq] || '').toLowerCase() + ' — ' + d.n + ' pagos · ' + (TIPO_LBL[TIPO] || TIPO);
+        // Anticipado: el interés no va en las cuotas, se descuenta del desembolso
+        var intShow = TIPO === 'ANTICIPADO' ? d.P * iP * d.n : totInt;
         document.getElementById('plan-foot').innerHTML =
-            '<span>Total intereses: <strong>' + fmt(totInt) + '</strong></span>' +
-            '<span>Total a pagar: <strong>' + fmt(d.P + totInt) + '</strong></span>';
+            '<span>' + (TIPO === 'ANTICIPADO' ? 'Interés anticipado' : 'Total intereses') +
+            ': <strong>' + fmt(intShow) + '</strong></span>' +
+            '<span>Total a pagar: <strong>' + fmt(d.P + intShow) + '</strong></span>';
         planModal.hidden = false;
     }
 

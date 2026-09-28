@@ -55,9 +55,15 @@ class TenantService
         }
 
         $now = date('Y-m-d H:i:s');
+        // Código corto para vincular la app móvil (ej. CONT-8492)
+        do {
+            $codigoApp = 'CONT-' . random_int(1000, 9999);
+        } while ($this->db->table('tenants')->where('app_codigo', $codigoApp)->countAllResults() > 0);
+
         $this->db->table('tenants')->insert([
             'nombre'          => $nombre,
             'slug'            => $slug,
+            'app_codigo'      => $codigoApp,
             'email'           => $email !== '' ? $email : null,
             'moneda'          => trim((string) ($d['moneda'] ?? 'C$')) ?: 'C$',
             'tasa_interes'    => (float) ($d['tasa_interes'] ?? 3),
@@ -141,6 +147,77 @@ class TenantService
         return '';
     }
 
+    /**
+     * Desglose del cobro mensual del tenant (plan + usuarios extra × USD 3).
+     * @return array{plan:?string, precio:float, moneda:string, usuarios:int,
+     *               incluidos:int, extra:int, monto_extra:float, total:float,
+     *               periodo:string, pagado:bool}
+     */
+    public function cobroMes(int $tenantId): array
+    {
+        helper('plan');
+        $c = plan_cobro_mes($tenantId);
+        $periodo = date('Y-m');
+        $pago = $this->db->table('plan_pagos')
+            ->where('tenant_id', $tenantId)->where('periodo', $periodo)->get()->getRowArray();
+        $c['periodo'] = $periodo;
+        $c['pagado']  = ($pago['estado'] ?? '') === 'PAGADO';
+        return $c;
+    }
+
+    /**
+     * Registra el cobro del período actual en plan_pagos (PAGADO).
+     * El monto = precio del plan + usuarios extra × PLAN_USD_EXTRA_USUARIO;
+     * el desglose queda en `observacion` para auditoría.
+     */
+    public function cobrarSuscripcion(int $tenantId, array $d, int $adminId): string
+    {
+        helper('plan');
+        $t = $this->db->table('tenants')->where('id', $tenantId)->get()->getRowArray();
+        if (!$t) return 'Tenant no encontrado.';
+        if (empty($t['plan_id'])) return 'El tenant no tiene plan contratado.';
+
+        $c = $this->cobroMes($tenantId);
+        if ($c['total'] <= 0) return 'Nada que cobrar: el plan es libre y no hay usuarios extra.';
+        if ($c['pagado'])   return 'El período ' . $c['periodo'] . ' ya está pagado.';
+
+        $extraTxt = $c['extra'] > 0
+            ? " + {$c['extra']} usuario(s) extra × USD " . number_format($c['precio_extra'], 2)
+              . " = USD " . number_format($c['monto_extra'], 2)
+            : '';
+        $detalle = sprintf('Plan %s USD %s%s → Total USD %s. Usuarios activos: %d (incluidos: %s).',
+            $c['plan'] ?? '—', number_format($c['precio'], 2), $extraTxt,
+            number_format($c['total'], 2), $c['usuarios'],
+            $c['incluidos'] < 0 ? 'ilimitados' : $c['incluidos']);
+        $nota = trim((string) ($d['observacion'] ?? ''));
+        if ($nota !== '') $detalle .= ' ' . $nota;
+
+        $datos = [
+            'tenant_id'      => $tenantId,
+            'plan_id'        => (int) $t['plan_id'],
+            'periodo'        => $c['periodo'],
+            'monto'          => $c['total'],
+            'moneda'         => $c['moneda'],
+            'metodo'         => trim((string) ($d['metodo'] ?? '')) ?: null,
+            'referencia'     => trim((string) ($d['referencia'] ?? '')) ?: null,
+            'fecha_pago'     => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($d['fecha_pago'] ?? ''))
+                ? $d['fecha_pago'] : date('Y-m-d'),
+            'estado'         => 'PAGADO',
+            'registrado_por' => $adminId,
+            'observacion'    => $detalle,
+            'updated_at'     => date('Y-m-d H:i:s'),
+        ];
+
+        $existe = $this->db->table('plan_pagos')
+            ->where('tenant_id', $tenantId)->where('periodo', $c['periodo'])->get()->getRowArray();
+        if ($existe) {
+            $this->db->table('plan_pagos')->where('id', $existe['id'])->update($datos);
+        } else {
+            $this->db->table('plan_pagos')->insert($datos + ['created_at' => date('Y-m-d H:i:s')]);
+        }
+        return '';
+    }
+
     /** Activa/suspende un tenant. */
     public function toggle(int $id): string
     {
@@ -159,9 +236,18 @@ class TenantService
     {
         $now = date('Y-m-d H:i:s');
 
-        // Menús — copia el árbol del tenant 1 (padres primero, luego hijos)
+        // Tenant plantilla: el que ya tiene menús provisionados (antes el id
+        // 1 fijo — en server el primer tenant puede tener otro id).
+        $tpl = (int) ($this->db->table('menus')
+            ->select('tenant_id')
+            ->groupBy('tenant_id')
+            ->orderBy('COUNT(*)', 'DESC')
+            ->get(1)->getRowArray()['tenant_id'] ?? 0);
+        if ($tpl === 0 || $tpl === $tenantId) return;
+
+        // Menús — copia el árbol de la plantilla (padres primero, luego hijos)
         $mapMenu = [];
-        $menusT1 = $this->db->table('menus')->where('tenant_id', 1)->orderBy('id')->get()->getResultArray();
+        $menusT1 = $this->db->table('menus')->where('tenant_id', $tpl)->orderBy('id')->get()->getResultArray();
         $idPorSlugT1 = [];
         foreach ($menusT1 as $m) {
             $idPorSlugT1[$m['id']] = $m['slug'];
@@ -186,8 +272,8 @@ class TenantService
             }
         }
 
-        // role_permissions — replica la asignación del tenant 1
-        $rpT1 = $this->db->table('role_permissions')->where('tenant_id', 1)->get()->getResultArray();
+        // role_permissions — replica la asignación de la plantilla
+        $rpT1 = $this->db->table('role_permissions')->where('tenant_id', $tpl)->get()->getResultArray();
         foreach ($rpT1 as $rp) {
             $existe = $this->db->table('role_permissions')
                 ->where('tenant_id', $tenantId)->where('role_id', $rp['role_id'])
@@ -202,11 +288,11 @@ class TenantService
             }
         }
 
-        // role_menus — replica por slug de menú
+        // role_menus — replica por slug de menú de la plantilla
         $rmT1 = $this->db->table('role_menus rm')
             ->select('rm.role_id, m.slug')
-            ->join('menus m', 'm.id = rm.menu_id')
-            ->where('rm.tenant_id', 1)->get()->getResultArray();
+            ->join('menus m', 'm.id = rm.menu_id AND m.tenant_id = ' . (int) $tpl)
+            ->where('rm.tenant_id', $tpl)->get()->getResultArray();
         foreach ($rmT1 as $rm) {
             $menuId = $mapMenu[$rm['slug']] ?? null;
             if (!$menuId) continue;

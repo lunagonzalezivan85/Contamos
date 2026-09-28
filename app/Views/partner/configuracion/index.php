@@ -160,7 +160,7 @@
             <div class="form-group">
                 <label for="tipo_calculo">Tipo de cálculo por defecto</label>
                 <select id="tipo_calculo" name="tipo_calculo">
-                    <?php $tc = old('tipo_calculo', $tenant['tipo_calculo'] ?? 'FRANCES'); ?>
+                    <?php $tc = old('tipo_calculo', $tenant['tipo_calculo'] ?? 'FLAT'); ?>
                     <?php foreach ($tiposCalc ?? [] as $k => $lbl): ?>
                         <option value="<?= esc($k) ?>" <?= $tc === $k ? 'selected' : '' ?>><?= esc($lbl) ?></option>
                     <?php endforeach; ?>

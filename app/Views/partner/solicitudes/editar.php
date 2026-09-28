@@ -26,7 +26,7 @@ $gestorSel = (string) old('asignado_a', $s['asignado_a'] ?? '');
       id="sol-edit-form" data-mon="<?= esc($mon) ?>" data-cliente="<?= esc($cliente) ?>" novalidate>
     <?= csrf_field() ?>
 
-    <div class="sol-split" style="grid-template-columns: 1.4fr 1fr;">
+    <div class="sol-split sol-split-lg">
 
         <!-- ======== Izquierda: formulario ======== -->
         <div>
@@ -124,6 +124,9 @@ $gestorSel = (string) old('asignado_a', $s['asignado_a'] ?? '');
                         <label for="fecha_primer_pago">Primer pago</label>
                         <input type="date" id="fecha_primer_pago" name="fecha_primer_pago"
                                value="<?= esc(old('fecha_primer_pago', $fechaSug)) ?>">
+                        <button type="button" class="btn btn-outline btn-sm" id="btn-plan" data-modal="modal-plan" style="margin-top:8px;">
+                            <?= icon('calendar', 13) ?> Ver plan sugerido
+                        </button>
                         <small class="form-hint">Fecha sugerida del primer cobro; el plan definitivo se arma al aprobar.</small>
                     </div>
                 </div>
@@ -164,9 +167,25 @@ $gestorSel = (string) old('asignado_a', $s['asignado_a'] ?? '');
     </div>
 </form>
 
+<!-- Modal: plan de pago sugerido (solo visual) -->
+<div class="modal-overlay" id="modal-plan" hidden>
+    <div class="modal-box plan-box">
+        <div class="modal-head">
+            <h4><?= icon('calendar', 16) ?> Plan de pago sugerido</h4>
+            <button type="button" class="modal-close" data-close aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="plan-body" id="plan-tabla"></div>
+        <div class="modal-foot">
+            <p class="form-hint" style="margin:0 auto 0 0; align-self:center;">Simulación referencial — el plan definitivo se genera al aprobar.</p>
+            <button type="button" class="btn btn-outline" data-close>Cerrar</button>
+        </div>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script src="<?= v_asset('js/plan-sugerido.js') ?>"></script>
 <script src="<?= v_asset('js/solicitud-editar.js') ?>"></script>
 <?= $this->endSection() ?>
 

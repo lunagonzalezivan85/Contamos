@@ -48,7 +48,7 @@
     var empty   = document.getElementById('palette-empty');
     var trigger = document.getElementById('palette-trigger');
 
-    if (!overlay || !input || !list) return;
+    if (overlay && input && list) {
 
     var items = Array.prototype.slice.call(list.querySelectorAll('.palette-item'));
     var activeIndex = -1;
@@ -139,6 +139,7 @@
     overlay.addEventListener('click', function (e) {
         if (e.target === overlay) closePalette();
     });
+    } // fin guarda paleta (páginas sin #palette, ej. layout admin)
 
     /* ---------- Panel de notificaciones ---------- */
     var bell      = document.getElementById('notif-bell');
@@ -197,7 +198,7 @@
 
     function cargarNotificaciones() {
         nBody.innerHTML = '<div class="notif-loading">Cargando…</div>';
-        fetch(window.APP_BASE + 'notificaciones', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        fetch(APP_BASE + 'notificaciones', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 setBadge(data.noLeidas || 0);
@@ -209,7 +210,7 @@
     }
 
     function marcarLeida(id) {
-        fetch(window.APP_BASE + 'notificaciones/' + id + '/leida', {
+        fetch(APP_BASE + 'notificaciones/' + id + '/leida', {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
@@ -218,7 +219,7 @@
     }
 
     function leerTodas() {
-        fetch(window.APP_BASE + 'notificaciones/leer-todas', {
+        fetch(APP_BASE + 'notificaciones/leer-todas', {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
@@ -255,8 +256,8 @@
     var aiDropdown = document.getElementById('ai-dropdown');
     var aiIndex    = -1;
 
-    // Acciones = mismos items de la paleta (renderizados server-side)
-    var aiActions = items.map(function (el) {
+    // Acciones = mismos items de la paleta (renderizados server-side); vacío si no hay paleta
+    var aiActions = (typeof items !== 'undefined' ? items : []).map(function (el) {
         return {
             name:  (el.querySelector('.palette-item-name') || {}).textContent || '',
             group: (el.querySelector('.palette-item-group') || {}).textContent || '',
@@ -923,4 +924,25 @@
             });
         }
     }
+
+    /* ---------- Dropdowns de acciones (.dd / [data-dd]) — por delegación ---------- */
+    function cerrarDropdowns() {
+        document.querySelectorAll('.dd-menu:not([hidden])').forEach(function (m) { m.hidden = true; });
+    }
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-dd]');
+        if (btn) {
+            var menu = btn.parentElement.querySelector('.dd-menu');
+            var estabaAbierto = menu && !menu.hidden;
+            cerrarDropdowns();
+            if (menu && !estabaAbierto) menu.hidden = false;
+            return;
+        }
+        if (!e.target.closest('.dd-menu')) cerrarDropdowns();
+        // clic en una opción → cerrar
+        if (e.target.closest('.dd-item')) cerrarDropdowns();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') cerrarDropdowns();
+    });
 })();

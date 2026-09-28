@@ -11,6 +11,7 @@ $opciones = [
     ['nombre' => 'Nueva solicitud',    'desc' => 'Crédito para un cliente', 'icono' => 'file-plus',   'url' => $slug . '/portal/solicitud',    'clase' => 'tile-primary'],
     ['nombre' => 'Desembolso',         'desc' => 'Dinero por entregar',     'icono' => 'dollar-sign', 'url' => $slug . '/portal/desembolso',   'clase' => ''],
     ['nombre' => 'Cobros',             'desc' => 'Cuotas por cobrar y en mora','icono' => 'credit-card','url' => $slug . '/portal/cobros',    'clase' => ''],
+    ['nombre' => 'Ruta de cobro',      'desc' => 'Clientes de hoy en el mapa','icono' => 'map-pin',   'url' => $slug . '/portal/mapa',       'clase' => ''],
     ['nombre' => 'Mi caja',            'desc' => 'Arqueo del día',          'icono' => 'clipboard',  'url' => $slug . '/portal/arqueo',       'clase' => ''],
     ['nombre' => 'Cartera de clientes','desc' => 'Todos tus clientes',      'icono' => 'briefcase',  'url' => $slug . '/portal/cartera',      'clase' => ''],
     ['nombre' => 'Actividad reciente', 'desc' => 'Solicitudes y movimientos','icono' => 'activity',   'url' => $slug . '/portal/actividad',    'clase' => ''],

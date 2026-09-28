@@ -4,6 +4,81 @@ Registro de cambios por sesión. Más reciente arriba.
 
 ---
 
+## 2026-09-28 (AM2) — App IONIC: las 10 pantallas conectadas al API
+
+- **Navegación real**: stack `{seg, param}` en `App.jsx` (`nav()`/`goBack()`); `Shell` + `AppTabs` compartidos en `components/`; tiles/menú/tabs navegan de verdad (el toast "en camino" quedó solo para mensajes).
+- **Pantallas**: `Home` (resumen real `/home` con stats clickeables), `Cobros` (lista + modal abonar + voucher `reciboCode`), `Cartera` (búsqueda local) + `Cliente` (ficha: datos/direcciones-Maps/solicitudes/cobros), `Ruta` (paradas + tel/Waze/Maps), `Desembolsos` (entregar → activa crédito), `Solicitud` (cliente de cartera o nuevo + términos, valida mín 1,000 y `limite_credito`), `Actividad`, `Arqueo` ("Mi caja" + fecha), `Calculadora` (`/simulador` → tabla de cuotas), `Perfil`.
+- **`api.js`**: 401 → borra sesión y recarga al login; helper `post()` FormData. **`fmt.js`**: `money`/`nombre`/`fHum`/`FREQ_LBL`/`wazeUrl`/`mapsUrl`.
+- **Pull-to-refresh** (`IonRefresher`) en Home y todas las listas. ~180 líneas de CSS nuevas (`stats`, `lc`, `badge`, `seg`, `ficha-hero`, `plan-tbl`, `voucher`).
+- `PLAN.md` en `IONIC/` con el checklist por fases. Build Vite OK + `cap sync` + `assembleDebug` 35s.
+
+## 2026-09-28 (AM1) — API app: servicios del gestor (`/connect/*`)
+
+- **`ConnectController`** — 12 endpoints nuevos, todos Bearer (`auth()` = `tokenAppValido`): `home` (resumen del día: cobrado/pendiente/paradas/desembolsos/avisos), `cartera`, `cliente/{id}` (ficha: persona + secciones + cobros), `cobros` (cuotas por cobrar + `resumenCobrosHoy` + `METODOS_LBL`), `POST cobros/{sol}/abonar` (pago en campo → REVISION), `GET cobros/{pago}/recibo` (voucher, solo cobros propios vigentes), `ruta` (paradas del día con GPS), `desembolsos` + `POST desembolsos/{id}/entregar` (activa crédito + cuotas + refinancia), `POST solicitud` (`crearSolicitudGestor` — clamp tasa tenant, estado CREADA), `actividad`, `arqueo?fecha=`, `simulador` (`planPagos` con tasa tope + `tipo_calculo` del tenant).
+- **`PortalService::empleadoDeId`** — fila completa del empleado (necesita `ruta` para crear solicitudes desde la app).
+- **`datos()`** helper — POST acepta JSON o form-urlencoded. `PagoModel::METODOS_LBL/LABEL_ESTADO/reciboCode` expuestos para la UI de la app.
+- **IONIC `api.js`**: funciones `home/cartera/cliente/cobros/abonarCobro/reciboCobro/ruta/desembolsos/entregarDesembolso/crearSolicitud/actividad/arqueo/simulador` + helper `post()` FormData (sin preflight).
+- `/IONIC/` movido de `.gitignore` a `.git/info/exclude` — sigue sin versionarse pero editable por agentes.
+- Probado local: login `TI-0002` → 13 endpoints OK (`home` devuelve resumen real, `simulador` cuota=2226.29 para 5000 a 3 meses).
+
+## 2026-09-27 (PM20) — App móvil IONIC (fase conexión) + API `/{slug}/connect`
+
+- **`ConnectController`** (`Partner/`): `GET /{slug}/connect` handshake (tenant + logo + suspendida), `POST /{slug}/connect/login` (carnet + PIN, reusa `autenticarGestor`) → token firmado HMAC 30 días (`PortalService::tokenApp`/`tokenAppValido`, sin tabla nueva) + `personaDeEmpleado`, y `GET /{slug}/connect/notificaciones` (Bearer → `notificacionesGestor`). CORS abierto + OPTIONS en `connect/*`; CSRF excluido vía `*/connect*` en `Filters.php` (la app no maneja cookie CSRF). Fix: `getJSON()` solo si Content-Type es JSON — explota con form-urlencoded.
+- **Carpeta `IONIC/`**: **Ionic React + Vite + Capacitor** (`@ionic/react`, `ionicons`, `react@18`). Flujo: splash "C" → setup de URL (valida `GET {base}connect` con spinner → "Conectado") → login carnet + PIN 4 dígitos (auto-avance/paste, cajas `.filled`) → home: toolbar con **campana de notificaciones** (`IonBadge` + `IonModal` bottom-sheet), hero del gestor, tiles, `IonTabBar` inferior y `IonMenu` lateral con las 9 secciones. `localStorage` (`cf.baseUrl`, `cf.tenant`, `cf.token`, `cf.gestor`) — sesión guardada entra directo. `webDir: dist` + `allowMixedContent` para HTTP en dev.
+- Probado local: `connect` y `connect/login` responden OK (`TI-0002`/`3713` → gestor "Juan Perez").
+
+## 2026-09-27 (PM19) — Portal gestor: ruta de cobro en mapa (`/portal/mapa`)
+
+- **Nueva sección** "Ruta de cobro" (sidebar + badge "Mapa" en Cobros): mapa MapLibre con las paradas del gestor — créditos con cuota que vence hoy o vencida (`PortalService::rutaCobrosHoy`, mejor dirección del cliente con `latitud/longitud` preferida).
+- **Geolocalización**: `navigator.geolocation` (botón "Mi ubicación"); orden sugerido vecino-más-cercano, markers numerados, distancia **lineal** por parada (haversine, sin tráfico). Clientes sin GPS quedan al final, marcados "sin GPS".
+- **Ruta dibujada**: OSRM `router.project-osrm.org` (driving, gratis sin key) con fallback a polyline recta si falla.
+- **Modal "Elegir clientes"**: checkboxes + Todos/Ninguno → redibuja mapa y lista.
+- **Navegar**: links Waze (`waze.com/ul?ll=`) y Google Maps (`maps/dir?destination=`) por parada — con coordenadas o búsqueda por dirección si no hay GPS.
+- Archivos: `Routes.php`, `PortalController::mapa`, `PortalService::rutaCobrosHoy`, `partner/portal/mapa.php`, `public/js/portal/mapa.js`, `portal.css` (`.ruta-*`), `layouts/portal.php` (`sideItems` + `tabMap`).
+
+## 2026-09-27 (PM18) — Portal gestor: sliders → inputs numéricos
+
+- `portal/solicitud.php` y `portal/calculadora.php`: los 4 `input[type=range]` (monto, tasa, plazo, días/semana) ahora son `type="number"` (`.calc-num`) — el usuario reportó que la solicitud dilataba por los sliders. El JS lee `.value` + evento `input`, funciona igual; `min`/`max`/`step`/`inputmode` conservados (teclado numérico en móvil). `aplicarLimite` sigue ajustando `montoIn.max` por cliente.
+- `portal.css`: nueva clase `.calc-num` (estilo igual al resto de inputs del portal).
+
+## 2026-09-27 (PM17) — Fix: panel de notificaciones vacío
+
+- `app.js`: el panel hacía `fetch(window.APP_BASE + 'notificaciones…')` pero `APP_BASE` es una `var` **local del IIFE** (línea 11), no global → URL `'undefinednotificaciones'` → catch → "Error al cargar". El badge sí se pintaba porque la carga inicial usa `APP_BASE` local. Cambiados los 3 fetch (`notificaciones`, `/{id}/leida`, `/leer-todas`) a `APP_BASE`.
+
+## 2026-09-27 (PM16) — `/herramientas/calculadora` con tipo de cobro
+
+- Selector **Tipo de cobro** (Francés / Flat / Alemán / Anticipado), default = `tenants.tipo_calculo`. JS del propio view calcula cuota e interés total por método (misma matemática que la calculadora del portal); etiqueta del resultado indica el método ("1ra cuota" para Alemán, "(sin interés)" para Anticipado).
+- **Responsive**: grids inline reemplazados por `.calc-split` (parámetros|resultado, 1 col ≤980px) y `.calc-inner` (campos 2 col → 1 col ≤560px) en `app.css` — el inline `minmax(320px,420px) 1fr` bloqueaba cualquier media query.
+
+## 2026-09-27 (PM15) — Cobro de suscripción con usuarios extra (USD 3) + dropdowns admin
+
+- **Usuario extra = USD 3**: nueva constante `PLAN_USD_EXTRA_USUARIO` y `plan_cobro_mes()` en `plan_helper` — desglose = precio del plan + (activos − `max_usuarios`) × $3. `UsuarioController::guardar` avisa con flash `warning` cuando el alta excede el plan; hint en `admin/usuarios/nuevo`.
+- **Botón Cobrar** en la ficha del tenant (`admin/tenants/{id}`): modal con desglose (plan, usuarios incluidos/activos, extras × $3, total) + método/referencia/fecha/observación → `POST admin/tenants/{id}/cobrar` → `TenantService::cobrarSuscripcion` hace upsert en `plan_pagos` del período `YYYY-MM` (estado PAGADO, desglose en `observacion`, bloquea si ya está pagado).
+- **Acciones en dropdown**: componente `.dd`/`.dd-menu`/`.dd-item` (CSS en `admin.css`, toggle delegado en `app.js`) aplicado en `admin/usuarios/index` y en la tabla de usuarios de la ficha del tenant (Editar / Activar-Desactivar / Resetear clave / Quitar).
+
+## 2026-09-27 (PM14) — Gestor hereda tipo_calculo (portal)
+
+- `data-tipo="<?= tenant.tipo_calculo ?>"` en `portal/solicitud.php` (`#sol-form`) y `portal/calculadora.php` (`#calc-app`) — el gestor ve y calcula con el método de la empresa, sin elegirlo.
+- `portal/solicitud.js` y `portal/calculadora.js`: cuota estimada y plan simulado por método — FLAT `(P/n + P·iP)`, ALEMAN 1ra cuota + interés `iP·P·(n+1)/2`, ANTICIPADO solo capital + nota "Interés anticipado", FRANCES cuota fija. Etiqueta muestra el método ("Cuota semanal estimada · Flat", resumen con fila Método, título del plan con el tipo).
+- `PortalService::crearSolicitudGestor` guarda `tipo_calculo` del tenant en la solicitud (default FLAT).
+
+## 2026-09-27 (PM13) — Nueva/Editar solicitud responsive
+
+- El inline `style="grid-template-columns: 1.4fr 1fr"` en `.sol-split` bloqueaba el `@media` de `app.css` → en móvil quedaban 2 columnas aplastadas. Reemplazado por `.sol-split-lg` (1.4fr solo ≥981px).
+- Media ≤768px nuevo en `app.css`: `.form-grid` a 1 columna, `.seg` con wrap (opciones 30%), `.sol-cliente` wrap, `.page-title` 19px, modal plan a ancho completo con tabla compacta.
+
+## 2026-09-27 (PM12) — Modal "Plan de pago sugerido" en nueva/editar
+
+- Botón **Ver plan sugerido** junto al campo Primer pago en `nueva.php`/`editar.php` — abre `#modal-plan` (sistema `.modal-overlay`/`data-modal`/`data-close` existente) con la tabla de cuotas calculada en vivo.
+- `public/js/plan-sugerido.js` (nuevo): replica `SolicitudService::planPagos` sin gracia — mismas fechas por frecuencia (DI sin domingo, Q día 15/fin de mes), cuotas por tipo FLAT/FRANCES/ALEMAN/ANTICIPADO, fila de totales y nota de interés anticipado. Estilos `.plan-*` en `app.css`.
+- Es **solo visual** — el plan real se genera al aprobar (nota en el pie del modal).
+
+## 2026-09-27 (PM11) — tipo_calculo por tenant, default FLAT
+
+- El **Tipo de cálculo por defecto** ya existía en `/configuracion` pero la columna venía de `ProductoCredito` con default FRANCES. Nueva migración `2026-09-27-000014_TenantTipoCalculo`: `MODIFY` a `DEFAULT 'FLAT'` y normaliza tenants existentes.
+- Defaults unificados a **FLAT** en `ConfiguracionService::guardar`, `configuracion/index.php`, `aprobar.php`, `nueva.php` y `crearOficina`/`actualizar`.
+- Repo inicializado y subido a `github.com/lunagonzalezivan85/Contamos` (branch `main`); `.gitignore` excluye dumps/SQL/zips de `writable/` y `.env`.
+
 ## 2026-09-27 (PM10) — Tipo de cálculo + fecha de primer pago en nueva/editar
 
 - **Nueva y Editar solicitud** ahora incluyen **Tipo de cálculo** (FRANCES / FLAT / ALEMAN / ANTICIPADO, por defecto FLAT — tasa × meses sobre el capital) y campo **Primer pago** (`fecha_primer_pago`, prefijada con `primerPagoSugerido`). Ambos se guardan en la solicitud y la vista de aprobación ya prefill la fecha elegida.

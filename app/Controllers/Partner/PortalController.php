@@ -303,6 +303,26 @@ class PortalController extends BaseController
         ], $this->portal->resumenCobrosHoy((int) $tenant['id'], (int) $empleado['id'], $creditos)));
     }
 
+    /** GET /{slug}/portal/mapa - ruta de cobro del día ordenada por distancia GPS. */
+    public function mapa(string $slug)
+    {
+        $ctx = $this->ctx($slug);
+        if (!$ctx) return redirect()->to('/' . $slug . '/portal/login');
+        [$tenant, $empleado] = $ctx;
+
+        $paradas = $this->portal->rutaCobrosHoy((int) $tenant['id'], (int) $empleado['id']);
+
+        return view('partner/portal/mapa', [
+            'title'    => 'Ruta de cobro - ' . $tenant['nombre'],
+            'tenant'   => $tenant,
+            'slug'     => $slug,
+            'empleado' => $empleado,
+            'paradas'  => $paradas,
+            'total'    => round(array_sum(array_column($paradas, 'monto')), 2),
+            'con_gps'  => count(array_filter($paradas, fn($p) => $p['lat'] !== null)),
+        ]);
+    }
+
     /** GET /{slug}/portal/cobros/{pago}/recibo - voucher imprimible del cobro del gestor. */
     public function reciboCobro(string $slug, int $pagoId)
     {

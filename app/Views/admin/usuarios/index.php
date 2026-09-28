@@ -71,11 +71,17 @@
                     <td class="text-muted"><?= $u['ultimo_login'] ? esc(date('d/m/Y H:i', strtotime($u['ultimo_login']))) : 'Nunca' ?></td>
                     <td class="text-muted"><?= $u['created_at'] ? esc(date('d/m/Y', strtotime($u['created_at']))) : '—' ?></td>
                     <td style="white-space:nowrap;">
-                        <a class="btn btn-sm" href="<?= base_url('admin/usuarios/' . $u['id'] . '/editar') ?>">Editar</a>
-                        <form method="post" action="<?= base_url('admin/usuarios/' . $u['id'] . '/toggle') ?>" style="display:inline;">
-                            <?= csrf_field() ?>
-                            <button type="submit" class="btn btn-sm"><?= $u['estado'] === 'ACTIVO' ? 'Desactivar' : 'Activar' ?></button>
-                        </form>
+                        <div class="dd">
+                            <button type="button" class="btn btn-sm" data-dd>Acciones ▾</button>
+                            <div class="dd-menu" hidden>
+                                <a class="dd-item" href="<?= base_url('admin/usuarios/' . $u['id'] . '/editar') ?>">Editar</a>
+                                <form method="post" action="<?= base_url('admin/usuarios/' . $u['id'] . '/toggle') ?>"
+                                      onsubmit="return confirm('¿<?= $u['estado'] === 'ACTIVO' ? 'Desactivar' : 'Activar' ?> a <?= esc($u['username'], 'attr') ?>?');">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="dd-item"><?= $u['estado'] === 'ACTIVO' ? 'Desactivar' : 'Activar' ?></button>
+                                </form>
+                            </div>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; ?>

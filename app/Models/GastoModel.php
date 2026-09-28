@@ -87,7 +87,7 @@ class GastoModel extends Model
     public function totalesPorCategoria(int $tenantId, array $f = []): array
     {
         $b = $this->select('gasto_categorias.nombre AS categoria,
-                            COUNT(*) AS n, SUM(gastos.monto) AS total')
+                            COUNT(*) AS n, SUM(' . $this->db->prefixTable('gastos') . '.monto) AS total')
             ->join('gasto_categorias', 'gasto_categorias.id = gastos.categoria_id')
             ->where('gastos.tenant_id', $tenantId)
             ->where('gastos.estado', self::ACTIVO);

@@ -5,7 +5,7 @@
 <div class="toolbar">
     <div>
         <h3 class="page-title">Nuevo usuario</h3>
-        <p class="page-sub">Alta de usuario en cualquier tenant — debe cambiar la clave en el primer login.</p>
+        <p class="page-sub">Alta de usuario en cualquier tenant — debe cambiar la clave en el primer login. Cada usuario activo por encima de los incluidos en el plan suma USD 3.00 al cobro mensual.</p>
     </div>
     <a class="btn" href="<?= base_url('admin/usuarios') ?>">← Volver</a>
 </div>
@@ -37,6 +37,7 @@
                         </option>
                     <?php endforeach; ?>
                 </select>
+                <small class="muted">Si es el primer usuario del tenant se asigna como Administrador automáticamente.</small>
             </div>
             <div class="fgroup">
                 <label>Usuario *</label>

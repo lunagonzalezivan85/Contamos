@@ -73,6 +73,13 @@
         document.getElementById('rs-cuota-lbl').textContent = lblCuota;
     }
 
+    document.getElementById('btn-plan').addEventListener('click', function () {
+        PlanSugerido.mostrar({
+            mon: mon, monto: monto.value, tasa: tasa.value, meses: plazo.value,
+            freq: freq(), dias: dias.value, tipo: tipo.value, fecha: fpp.value
+        });
+    });
+
     document.getElementById('monto-chips').addEventListener('click', function (e) {
         var b = e.target.closest('.mini-chip');
         if (!b) return;

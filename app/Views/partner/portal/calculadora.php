@@ -17,7 +17,8 @@
 
 <!-- Resultado destacado -->
 <div class="calc-result" id="calc-app" data-mon="<?= esc($mon) ?>"
-     data-tasa="<?= esc(number_format((float) ($tenant['tasa_interes'] ?? 3), 2, '.', '')) ?>">
+     data-tasa="<?= esc(number_format((float) ($tenant['tasa_interes'] ?? 3), 2, '.', '')) ?>"
+     data-tipo="<?= esc($tenant['tipo_calculo'] ?? 'FLAT') ?>">
     <span class="calc-result-label" id="calc-cuota-label">Cuota mensual estimada</span>
     <strong class="calc-result-cuota" id="calc-cuota"><?= esc($mon) ?> 0.00</strong>
     <div class="calc-result-metas">
@@ -43,7 +44,7 @@
             <label>Monto del préstamo</label>
             <output class="calc-val" id="calc-monto-lbl"><?= esc($mon) ?> 50,000</output>
         </div>
-        <input type="range" class="calc-range" id="calc-monto" min="1000" max="500000" step="500" value="50000">
+        <input type="number" class="calc-num" id="calc-monto" min="1000" max="500000" step="500" inputmode="decimal" value="50000">
     </div>
     <?php $tasaMax = (float) ($tenant['tasa_interes'] ?? 3); ?>
     <div class="calc-field">
@@ -51,7 +52,7 @@
             <label>Tasa mensual</label>
             <output class="calc-val" id="calc-tasa-lbl"><?= number_format($tasaMax, 2) ?>%</output>
         </div>
-        <input type="range" class="calc-range" id="calc-tasa" min="0" step="0.25"
+        <input type="number" class="calc-num" id="calc-tasa" min="0" step="0.25" inputmode="decimal"
                max="<?= esc(number_format($tasaMax, 2, '.', '')) ?>"
                value="<?= esc(number_format($tasaMax, 2, '.', '')) ?>">
         <p class="geo-hint">Podés bajarla para negociar — máximo <?= number_format($tasaMax, 2) ?>% (configuración de la empresa).</p>
@@ -61,7 +62,7 @@
             <label>Plazo del préstamo</label>
             <output class="calc-val" id="calc-plazo-lbl">12 meses</output>
         </div>
-        <input type="range" class="calc-range" id="calc-plazo" min="3" max="60" step="1" value="12">
+        <input type="number" class="calc-num" id="calc-plazo" min="3" max="60" step="1" inputmode="numeric" value="12">
     </div>
 
     <!-- Frecuencia de pago -->
@@ -76,7 +77,7 @@
         </div>
         <div class="calc-dias" id="calc-dias-wrap" hidden>
             <label for="calc-dias">Días de pago por semana (diario intermitente)</label>
-            <input type="range" class="calc-range" id="calc-dias" min="1" max="7" step="1" value="3">
+            <input type="number" class="calc-num" id="calc-dias" min="1" max="7" step="1" inputmode="numeric" value="3">
             <div class="calc-dias-lbl"><output id="calc-dias-lbl">3 días / semana</output></div>
         </div>
     </div>

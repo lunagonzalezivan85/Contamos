@@ -35,19 +35,56 @@ $titulos = [
                     <?php
                     $fDes = (string) ($s['fecha_desembolso'] ?? '');
                     $vencio = $fDes !== '' && $fDes <= ($hoy ?? date('Y-m-d'));
+
+                    // Contacto: WhatsApp + Waze/Maps (mismo patrón que cartera)
+                    $tel = preg_replace('/\D/', '', (string) ($s['telefono'] ?? ''));
+                    if (strlen($tel) === 8) $tel = '505' . $tel;   // Nicaragua por defecto
+
+                    $dirGeo = $s['dir_geo'] ?? null;
+                    $conGps = $dirGeo && is_numeric($dirGeo['latitud'] ?? null) && is_numeric($dirGeo['longitud'] ?? null);
+                    $dirTxt = '';
+                    if (!$conGps) {
+                        $dirTxt = trim(implode(', ', array_filter([
+                            $dirGeo['detalle'] ?? '', $dirGeo['barrio'] ?? '',
+                            $dirGeo['ciudad'] ?? '', $dirGeo['departamento'] ?? '',
+                        ])));
+                        if ($dirTxt === '') $dirTxt = trim((string) ($s['direccion'] ?? ''));
+                    }
+                    if ($conGps) {
+                        $urlWaze = 'https://waze.com/ul?ll=' . $dirGeo['latitud'] . '%2C' . $dirGeo['longitud'] . '&navigate=yes';
+                        $urlMaps = 'https://www.google.com/maps/dir/?api=1&destination=' . $dirGeo['latitud'] . ',' . $dirGeo['longitud'];
+                    } elseif ($dirTxt !== '') {
+                        $urlWaze = 'https://waze.com/ul?q=' . urlencode($dirTxt) . '&navigate=yes';
+                        $urlMaps = 'https://www.google.com/maps/dir/?api=1&destination=' . urlencode($dirTxt);
+                    } else {
+                        $urlWaze = $urlMaps = null;
+                    }
                     ?>
-                    <div class="oui-list-item">
-                        <span class="oui-icon"><?= icon('dollar-sign', 18) ?></span>
-                        <span class="oui-body">
-                            <span class="oui-title"><?= esc(trim($s['nombres'] . ' ' . $s['apellidos'])) ?> - <?= esc($m2) ?> <?= number_format((float) ($s['monto_aprobado'] ?: $s['monto']), 0) ?></span>
-                            <span class="oui-sub"><?= esc($s['destino'] ?? 'Préstamo aprobado') ?> · Entrega: <?= esc($fDes ?: 'sin fecha') ?></span>
-                        </span>
-                        <span class="badge <?= $vencio ? 'badge-soft' : '' ?>"><?= $vencio ? 'Hoy' : 'Pendiente' ?></span>
-                        <form method="post" action="<?= base_url($slug . '/portal/desembolso/' . $s['id'] . '/entregar') ?>"
-                              onsubmit="return confirm('¿Confirmar que entregaste el dinero?');">
-                            <?= csrf_field() ?>
-                            <button class="btn btn-primary btn-sm"><?= icon('check', 14) ?> Entregado</button>
-                        </form>
+                    <div class="cli-item">
+                        <div class="oui-list-item">
+                            <span class="oui-icon"><?= icon('dollar-sign', 18) ?></span>
+                            <span class="oui-body">
+                                <span class="oui-title"><?= esc(trim($s['nombres'] . ' ' . $s['apellidos'])) ?> - <?= esc($m2) ?> <?= number_format((float) ($s['monto_aprobado'] ?: $s['monto']), 0) ?></span>
+                                <span class="oui-sub"><?= esc($s['destino'] ?? 'Préstamo aprobado') ?> · Entrega: <?= esc($fDes ?: 'sin fecha') ?></span>
+                            </span>
+                            <span class="badge <?= $vencio ? 'badge-soft' : '' ?>"><?= $vencio ? 'Hoy' : 'Pendiente' ?></span>
+                            <form method="post" action="<?= base_url($slug . '/portal/desembolso/' . $s['id'] . '/entregar') ?>"
+                                  onsubmit="return confirm('¿Confirmar que entregaste el dinero?');">
+                                <?= csrf_field() ?>
+                                <button class="btn btn-primary btn-sm"><?= icon('check', 14) ?> Entregado</button>
+                            </form>
+                        </div>
+                        <?php if ($tel !== '' || $urlWaze): ?>
+                        <div class="cli-acciones">
+                            <?php if ($tel !== ''): ?>
+                                <a class="cli-act cli-wa" href="https://wa.me/<?= esc($tel) ?>" target="_blank" rel="noopener"><?= icon('whatsapp', 14) ?> WhatsApp</a>
+                            <?php endif; ?>
+                            <?php if ($urlWaze): ?>
+                                <a class="cli-act cli-waze" href="<?= esc($urlWaze) ?>" target="_blank" rel="noopener"><?= icon('waze', 14) ?> Waze</a>
+                                <a class="cli-act cli-maps" href="<?= esc($urlMaps) ?>" target="_blank" rel="noopener"><?= icon('gmaps', 14) ?> Maps</a>
+                            <?php endif; ?>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -258,6 +295,7 @@ $titulos = [
                 <span>
                     <a class="badge <?= !$mora ? 'sol-badge-activo' : 'badge-soft' ?>" href="<?= base_url($slug . '/portal/cobros' . ($fSel !== $hoy ? '?fecha=' . $fSel : '')) ?>">Por cobrar</a>
                     <a class="badge <?= $mora ? 'sol-badge-rechazada' : 'badge-soft' ?>" href="<?= base_url($slug . '/portal/cobros?mora=1' . ($fSel !== $hoy ? '&fecha=' . $fSel : '')) ?>">En mora</a>
+                    <a class="badge badge-soft" href="<?= base_url($slug . '/portal/mapa') ?>">Mapa</a>
                 </span>
             </div>
             <p class="card-subtitle" style="margin-top:2px;">

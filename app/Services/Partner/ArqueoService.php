@@ -69,9 +69,9 @@ class ArqueoService
             ->where('pagos.estado', PagoModel::APLICADO)
             // Los contra-pagos de reversión (monto negativo) son corrección
             // contable — no mueven efectivo de la caja del gestor.
-            ->where('pagos.revierte_id IS NULL', null, false)
+            ->where(\Config\Database::connect()->prefixTable('pagos') . '.revierte_id IS NULL', null, false)
             ->where('pagos.monto >', 0)
-            ->where('DATE(pagos.fecha_hora)', $fecha)
+            ->where('DATE(' . \Config\Database::connect()->prefixTable('pagos') . '.fecha_hora)', $fecha)
             ->orderBy('pagos.fecha_hora', 'ASC')
             ->findAll();
 
@@ -83,7 +83,7 @@ class ArqueoService
             ->where('solicitudes.tenant_id', $tenantId)
             ->where('solicitudes.asignado_a', $empleadoId)
             ->where('solicitudes.estado', SolicitudModel::ACTIVO)
-            ->where('DATE(solicitudes.fecha_entrega)', $fecha)
+            ->where('DATE(' . \Config\Database::connect()->prefixTable('solicitudes') . '.fecha_entrega)', $fecha)
             ->orderBy('solicitudes.fecha_entrega', 'ASC')
             ->findAll();
 

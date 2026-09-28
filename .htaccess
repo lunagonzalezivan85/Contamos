@@ -8,6 +8,9 @@
     # No reescribir peticiones que ya apuntan a public/
     RewriteCond %{REQUEST_URI} !^/cfsi/public/ [NC]
 
+    # La app IONIC se sirve como estática, sin pasar por public/
+    RewriteCond %{REQUEST_URI} !^/cfsi/IONIC/ [NC]
+
     # Reescribir todo hacia public/
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>

@@ -100,7 +100,7 @@ $monedaJs = esc($mon, 'js');
                         <label for="ap_tipo">Tipo de cálculo</label>
                         <select id="ap_tipo" name="tipo_calculo">
                             <?php foreach ($tiposCalc as $k => $lbl): ?>
-                                <option value="<?= $k ?>" <?= old('tipo_calculo', $s['tipo_calculo'] ?: ($tenant['tipo_calculo'] ?? 'FRANCES')) === $k ? 'selected' : '' ?>><?= esc($lbl) ?></option>
+                                <option value="<?= $k ?>" <?= old('tipo_calculo', $s['tipo_calculo'] ?: ($tenant['tipo_calculo'] ?? 'FLAT')) === $k ? 'selected' : '' ?>><?= esc($lbl) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

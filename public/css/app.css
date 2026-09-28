@@ -1048,6 +1048,14 @@ a.chip-stat:hover { border-color: var(--primary); box-shadow: 0 4px 14px rgba(48
 /* ---------- Split: solicitud + análisis ---------- */
 .sol-split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
 @media (max-width: 980px) { .sol-split { grid-template-columns: 1fr; } }
+/* Variante ancha (nueva/editar solicitud): 1.4fr solo en desktop — en móvil cae a 1 col */
+@media (min-width: 981px) { .sol-split-lg { grid-template-columns: 1.4fr 1fr; } }
+
+/* ---------- Calculadora de cuotas (herramientas) ---------- */
+.calc-split { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; gap: 16px; align-items: start; }
+.calc-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+@media (max-width: 980px) { .calc-split { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .calc-inner { grid-template-columns: 1fr; } }
 
 /* ---------- Expediente colapsable ---------- */
 .sol-collapse { padding: 0; }
@@ -1826,6 +1834,18 @@ kbd {
 .sidebar-scrim { display: none; }
 
 @media (max-width: 768px) {
+    /* Formularios (nueva/editar solicitud y afines) */
+    .page-title { font-size: 19px; }
+    .form-grid { grid-template-columns: 1fr; gap: 14px; }
+    .form-grid .form-group { min-width: 0; }
+    .seg { flex-wrap: wrap; }
+    .seg label { flex: 1 1 30%; padding: 10px 6px; font-size: 12.5px; }
+    .sol-cliente { flex-wrap: wrap; }
+    .sol-cliente-link { margin-left: 0; }
+    .modal-box.plan-box { max-width: 100%; }
+    .plan-table { font-size: 12px; }
+    .plan-table td, .plan-table th { padding: 6px 7px; }
+
     .sidebar { transform: translateX(-100%); transition: transform .25s; }
     .sidebar.open { transform: translateX(0); }
     .topbar-menu { display: inline-flex; }
@@ -1931,3 +1951,22 @@ kbd {
     transition: color .15s;
 }
 .val-later:hover { color: #475569; }
+
+/* ---------- Modal plan de pago sugerido ---------- */
+.plan-box { max-width: 680px; }
+.plan-body { padding: 14px 20px 20px; }
+.plan-resumen { margin: 0 0 12px; font-size: 13px; color: var(--text-muted); }
+.plan-scroll { max-height: 55vh; overflow: auto; border: 1px solid #EEF2F6; border-radius: 10px; }
+.plan-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.plan-table th {
+    position: sticky; top: 0; z-index: 1;
+    background: var(--secondary, #2E3542); color: #fff;
+    text-align: right; padding: 8px 10px; font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: .4px; white-space: nowrap;
+}
+.plan-table th:first-child, .plan-table td:first-child { text-align: left; }
+.plan-table td { padding: 7px 10px; border-bottom: 1px solid #F1F5F9; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.plan-table tr:last-child td { border-bottom: none; }
+.plan-table tr.plan-total td { border-top: 2px solid var(--primary); font-weight: 700; background: var(--primary-soft); }
+.plan-table .plan-int { color: #B45309; }
+.plan-table .plan-cap { color: var(--primary-dark); }

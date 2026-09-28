@@ -19,7 +19,7 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
       data-mon="<?= esc($m2) ?>" data-tasa="<?= esc(number_format($tasa, 2, '.', '')) ?>" novalidate>
     <?= csrf_field() ?>
 
-    <div class="sol-split" style="grid-template-columns: 1.4fr 1fr;">
+    <div class="sol-split sol-split-lg">
 
         <!-- ======== Izquierda: formulario ======== -->
         <div>
@@ -119,6 +119,9 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
                         <label for="fecha_primer_pago">Primer pago</label>
                         <input type="date" id="fecha_primer_pago" name="fecha_primer_pago" min="<?= date('Y-m-d') ?>"
                                value="<?= esc(old('fecha_primer_pago', $fechaSug)) ?>">
+                        <button type="button" class="btn btn-outline btn-sm" id="btn-plan" data-modal="modal-plan" style="margin-top:8px;">
+                            <?= icon('calendar', 13) ?> Ver plan sugerido
+                        </button>
                         <small class="form-hint">Fecha sugerida del primer cobro; el plan definitivo se arma al aprobar.</small>
                     </div>
                 </div>
@@ -160,6 +163,22 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
     </div>
 </form>
 
+<!-- Modal: plan de pago sugerido (solo visual) -->
+<div class="modal-overlay" id="modal-plan" hidden>
+    <div class="modal-box plan-box">
+        <div class="modal-head">
+            <h4><?= icon('calendar', 16) ?> Plan de pago sugerido</h4>
+            <button type="button" class="modal-close" data-close aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="plan-body" id="plan-tabla"></div>
+        <div class="modal-foot">
+            <p class="form-hint" style="margin:0 auto 0 0; align-self:center;">Simulación referencial — el plan definitivo se genera al aprobar.</p>
+            <button type="button" class="btn btn-outline" data-close>Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<script src="<?= v_asset('js/plan-sugerido.js') ?>"></script>
 <script>
 (function () {
     var form  = document.getElementById('sol-form');
@@ -241,6 +260,13 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
         document.getElementById('rs-cuota').textContent   = fmt(cuota) + (n > 0 && P > 0 ? ' × ' + n : '');
         document.getElementById('rs-cuota-lbl').textContent = lblCuota;
     }
+
+    document.getElementById('btn-plan').addEventListener('click', function () {
+        PlanSugerido.mostrar({
+            mon: mon, monto: monto.value, tasa: TASA, meses: plazo.value,
+            freq: freq(), dias: dias.value, tipo: tipo.value, fecha: fpp.value
+        });
+    });
 
     document.getElementById('monto-chips').addEventListener('click', function (e) {
         var b = e.target.closest('.mini-chip');

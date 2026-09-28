@@ -81,6 +81,15 @@ class UsuarioController extends BaseController
         if (!$this->db()->table('tenants')->where('id', $tenantId)->countAllResults()) {
             return $this->backError('Tenant inválido.');
         }
+        // Primer usuario del tenant → siempre Administrador (regla de negocio)
+        $tieneUsuarios = $this->db()->table('users')
+            ->where('tenant_id', $tenantId)
+            ->where('deleted_at IS NULL', null, false)
+            ->countAllResults() > 0;
+        if (!$tieneUsuarios) {
+            $roleId = (int) ($this->db()->table('roles')
+                ->where('slug', 'admin')->get()->getRowArray()['id'] ?? $roleId);
+        }
         if (!$this->db()->table('roles')->where('id', $roleId)->where('estado', 'ACTIVO')->countAllResults()) {
             return $this->backError('Rol inválido.');
         }
@@ -103,8 +112,18 @@ class UsuarioController extends BaseController
             'created_by'            => (int) session('user_id'),
         ]);
 
+        // Cargo extra: usuarios activos por encima de lo incluido en el plan (+USD 3 c/u)
+        helper('plan');
+        $cobro  = plan_cobro_mes($tenantId);
+        $aviso  = "Usuario «{$user}» creado. Debe cambiar la clave al entrar.";
+        if ($cobro['extra'] > 0) {
+            return redirect()->to($this->backTo() ?? 'admin/usuarios')
+                ->with('warning', $aviso . " El tenant ya lleva {$cobro['extra']} usuario(s) extra — "
+                    . 'se suman USD ' . number_format($cobro['monto_extra'], 2) . ' al cobro mensual.');
+        }
+
         return redirect()->to($this->backTo() ?? 'admin/usuarios')
-            ->with('success', "Usuario «{$user}» creado. Debe cambiar la clave al entrar.");
+            ->with('success', $aviso);
     }
 
     /** GET /admin/usuarios/{id}/editar */

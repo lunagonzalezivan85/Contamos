@@ -1022,8 +1022,9 @@ class PagoService
             ->where('pagos.empleado_id', $empleadoId)
             ->where('pagos.tipo', PagoModel::TIPO_PAGO)
             ->where('pagos.monto >', 0)
-            ->where('pagos.revierte_id IS NULL', null, false)
-            ->where('DATE(pagos.fecha_hora)', date('Y-m-d'))
+            // prefijo explícito: los strings raw no pasan por protectIdentifiers
+            ->where($this->db->prefixTable('pagos') . '.revierte_id IS NULL', null, false)
+            ->where('DATE(' . $this->db->prefixTable('pagos') . '.fecha_hora)', date('Y-m-d'))
             ->orderBy('pagos.fecha_hora', 'DESC')
             ->findAll();
     }

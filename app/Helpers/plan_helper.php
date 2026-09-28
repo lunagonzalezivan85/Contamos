@@ -14,6 +14,9 @@
  *   if (!plan_al_dia()['ok'])    → banner de suscripción vencida
  */
 
+/** Cargo mensual por cada usuario activo por encima de `max_usuarios` del plan (USD). */
+defined('PLAN_USD_EXTRA_USUARIO') || define('PLAN_USD_EXTRA_USUARIO', 3.00);
+
 if (!function_exists('plan_actual')) {
 
     /** Plan contratado por el tenant en sesión (o el dado). */
@@ -122,6 +125,38 @@ if (!function_exists('plan_actual')) {
         return ['ok' => false, 'estado' => 'VENCIDA',
                 'motivo' => 'Suscripción vencida — no se registró el pago del período ' . $periodo . '.',
                 'proximo' => $proximo, 'ultimo_pago' => $ultimoStr];
+    }
+
+    /**
+     * Desglose del cobro mensual del tenant: precio del plan + usuarios
+     * extra (cada usuario ACTIVO por encima de `planes.max_usuarios`
+     * suma PLAN_USD_EXTRA_USUARIO). -1 en el plan = sin cargo extra.
+     * @return array{plan:?string, precio:float, moneda:string, usuarios:int,
+     *               incluidos:int, extra:int, monto_extra:float, total:float}
+     */
+    function plan_cobro_mes(int $tenantId): array
+    {
+        $plan = plan_actual($tenantId);
+        $precio   = (float) ($plan['precio_mensual'] ?? 0);
+        $incluidos = (int) ($plan['max_usuarios'] ?? -1);
+        $usuarios = (int) db_connect()->table('users')
+            ->where('tenant_id', $tenantId)->where('estado', 'ACTIVO')
+            ->where('deleted_at IS NULL', null, false)->countAllResults();
+
+        $extra = $incluidos >= 0 ? max(0, $usuarios - $incluidos) : 0;
+        $montoExtra = $extra * PLAN_USD_EXTRA_USUARIO;
+
+        return [
+            'plan'        => $plan['nombre'] ?? null,
+            'precio'      => $precio,
+            'moneda'      => $plan['moneda'] ?? 'USD',
+            'usuarios'    => $usuarios,
+            'incluidos'   => $incluidos,
+            'extra'       => $extra,
+            'precio_extra' => PLAN_USD_EXTRA_USUARIO,
+            'monto_extra' => $montoExtra,
+            'total'       => round($precio + $montoExtra, 2),
+        ];
     }
 
     /** Próxima fecha de corte: el día de pago del tenant (este mes o el siguiente). */

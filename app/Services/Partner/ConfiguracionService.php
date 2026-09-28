@@ -64,7 +64,7 @@ class ConfiguracionService
             'pronto_pago_pct' => ($d['pronto_pago_pct'] ?? '') !== '' ? (float) $d['pronto_pago_pct'] : 0,
             'plazo_meses_max' => (int) ($d['plazo_meses_max'] ?? 0) > 0 ? (int) $d['plazo_meses_max'] : 24,
             'tipo_calculo'    => in_array($d['tipo_calculo'] ?? '', array_keys(\App\Services\Partner\SolicitudService::TIPOS_CALCULO), true)
-                ? $d['tipo_calculo'] : 'FRANCES',
+                ? $d['tipo_calculo'] : 'FLAT',
             'comision_pct'    => ($d['comision_pct'] ?? '') !== '' ? (float) $d['comision_pct'] : 0,
             'seguro_pct'      => ($d['seguro_pct'] ?? '') !== '' ? (float) $d['seguro_pct'] : 0,
             'contacto_nombre' => trim((string) ($d['contacto_nombre'] ?? '')),

@@ -6,17 +6,17 @@
 <div class="list-head">
     <div>
         <h3 class="page-title">Calculadora de cuotas</h3>
-        <p class="page-subtitle">Simulación de cuota francesa — no guarda nada, solo calcula.</p>
+        <p class="page-subtitle">Simulación de cuota por tipo de cobro — no guarda nada, solo calcula.</p>
     </div>
 </div>
 
-<div style="display:grid; grid-template-columns: minmax(320px, 420px) 1fr; gap:16px; align-items:start;">
+<div class="calc-split">
 
     <!-- Parámetros -->
     <div class="card">
         <h4 class="card-title">Parámetros</h4>
         <p class="card-subtitle">Ajustá el monto, plazo y tasa.</p>
-        <div class="modal-body" style="padding:0; display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;">
+        <div class="calc-inner">
             <div class="form-group form-full">
                 <label>Monto del crédito</label>
                 <input type="number" id="c-monto" step="100" min="0" value="10000">
@@ -34,6 +34,14 @@
                     <option value="30">30 — Diaria</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label>Tipo de cobro</label>
+                <select id="c-tipo">
+                    <?php foreach (['FRANCES' => 'Francés (cuota fija)', 'FLAT' => 'Flat (interés fijo)', 'ALEMAN' => 'Alemán (cuota decreciente)', 'ANTICIPADO' => 'Anticipado (interés por adelantado)'] as $tv => $tl): ?>
+                        <option value="<?= $tv ?>" <?= ($tipo ?? 'FLAT') === $tv ? 'selected' : '' ?>><?= $tl ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
             <div class="form-group form-full">
                 <label>Tasa mensual (%)</label>
                 <input type="number" id="c-tasa" step="0.1" min="0" value="<?= esc(number_format($tasa, 2, '.', '')) ?>">
@@ -46,7 +54,7 @@
         <h4 class="card-title">Resultado</h4>
         <p class="card-subtitle">Cuota por pago según frecuencia elegida.</p>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;">
+        <div class="calc-inner">
             <div class="stat-card" style="grid-column:1/-1;">
                 <div class="stat-num" style="font-size:2rem; color:var(--primary-dark);" id="r-cuota"><?= esc($m2) ?> 0.00</div>
                 <div class="stat-lbl" id="r-cuota-lbl">Cuota semanal</div>
@@ -78,7 +86,9 @@
     const plazo = document.getElementById('c-plazo');
     const frec  = document.getElementById('c-frec');
     const tasa  = document.getElementById('c-tasa');
+    const tipo  = document.getElementById('c-tipo');
     const frecLbl = { '1': 'mensual', '2': 'quincenal', '4': 'semanal', '30': 'diaria' };
+    const tipoLbl = { FRANCES: 'Francés', FLAT: 'Flat', ALEMAN: 'Alemán', ANTICIPADO: 'Anticipado' };
 
     function fmt(v) { return mon + ' ' + v.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 
@@ -90,20 +100,30 @@
         const n  = pm * f;                       // número de pagos
         const i  = tm / f;                       // tasa por periodo
 
-        let cuota = 0;
+        let cuota = 0, intTot = 0;
         if (P > 0 && n > 0) {
-            cuota = i > 0 ? P * i / (1 - Math.pow(1 + i, -n)) : P / n;
+            switch (tipo.value) {
+                case 'FLAT':       cuota = P / n + P * i;  intTot = P * i * n; break;
+                case 'ALEMAN':     cuota = P / n + P * i;  intTot = i * P * (n + 1) / 2; break; // 1ra cuota (la mayor)
+                case 'ANTICIPADO': cuota = P / n;          intTot = P * i * n; break;   // solo capital, interés por adelantado
+                default: /* FRANCES */
+                    cuota  = i > 0 ? P * i / (1 - Math.pow(1 + i, -n)) : P / n;
+                    intTot = cuota * n - P;
+            }
         }
-        const total = cuota * n;
+        const total = P + intTot;
         document.getElementById('r-cuota').textContent = fmt(cuota);
-        document.getElementById('r-cuota-lbl').textContent = 'Cuota ' + (frecLbl[frec.value] || '');
+        document.getElementById('r-cuota-lbl').textContent =
+            (tipo.value === 'ALEMAN' ? '1ra cuota' : 'Cuota') + ' ' + (frecLbl[frec.value] || '') +
+            ' · ' + (tipoLbl[tipo.value] || tipo.value) +
+            (tipo.value === 'ANTICIPADO' ? ' (sin interés)' : '');
         document.getElementById('r-total').textContent = fmt(total);
-        document.getElementById('r-interes').textContent = fmt(Math.max(0, total - P));
+        document.getElementById('r-interes').textContent = fmt(Math.max(0, intTot));
         document.getElementById('r-n').textContent = n;
         document.getElementById('r-tasa-ef').textContent = (i * 100).toFixed(3) + '%';
     }
 
-    [monto, plazo, frec, tasa].forEach(el => el.addEventListener('input', calc));
+    [monto, plazo, frec, tipo, tasa].forEach(el => el.addEventListener('input', calc));
     calc();
 })();
 </script>

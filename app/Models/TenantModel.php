@@ -14,7 +14,7 @@ class TenantModel extends Model
     protected $useTimestamps    = true;
 
     protected $allowedFields = [
-        'nombre', 'slug', 'razon_social', 'email', 'telefono', 'direccion',
+        'nombre', 'slug', 'app_codigo', 'razon_social', 'email', 'telefono', 'direccion',
         'lema', 'quienes_somos', 'mision', 'vision', 'valores',
         'ruc', 'conami_registro', 'voucher_footer', 'horario', 'hora_inicio', 'hora_fin', 'moneda',
         'tasa_interes', 'mora_diaria_pct', 'pronto_pago_pct', 'plazo_meses_max',

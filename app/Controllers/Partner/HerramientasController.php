@@ -25,6 +25,7 @@ class HerramientasController extends BaseController
             'mon'      => (new PagoService())->moneda($tenantId),
             'tasa'     => (float) ($tenant['tasa_interes'] ?? 3),
             'plazoMax' => (int) ($tenant['plazo_meses_max'] ?? 24),
+            'tipo'     => $tenant['tipo_calculo'] ?? 'FLAT',
         ]);
     }
 

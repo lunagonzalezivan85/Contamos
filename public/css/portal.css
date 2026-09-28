@@ -107,6 +107,20 @@
     background: #fff; border: 3px solid var(--primary);
     box-shadow: 0 2px 8px rgba(0,0,0,.18); cursor: grab;
 }
+.calc-num {
+    width: 100%;
+    border: 1.5px solid #E2E8F0;
+    border-radius: var(--radius);
+    background: #fff;
+    padding: 11px 14px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    outline: none;
+    transition: border-color .15s, background .15s;
+}
+.calc-num:focus { border-color: var(--primary); background: var(--primary-soft); }
 @media (max-width: 480px) { .calc-result-metas { grid-template-columns: 1fr 1fr; } .calc-meta:last-child { grid-column: 1 / -1; } }
 
 /* Frecuencia de pago — chips */
@@ -721,6 +735,61 @@
 @media (min-width: 900px) {
     .app-notif-panel { left: auto; right: 24px; transform: none; }
 }
+
+/* ---------- Ruta de cobro en mapa (/portal/mapa) ---------- */
+.ruta-mapa {
+    height: 380px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #EEF2F6;
+}
+.ruta-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.ruta-warn { color: var(--danger, #EF4444); font-weight: 600; }
+
+.ruta-mk {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; font-size: 13px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    border: 2.5px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+.ruta-mk-mio { background: #2E6FE8; width: 20px; height: 20px; }
+
+.ruta-lista { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.ruta-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px; border: 1.5px solid #EEF2F6; border-radius: 12px; background: #fff;
+}
+.ruta-item.vencida { border-color: #FCD5CE; background: #FFFBFA; }
+.ruta-item-num {
+    flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; font-weight: 800; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+}
+.ruta-item-body { flex: 1; min-width: 0; }
+.ruta-item-nom { font-size: 14.5px; font-weight: 700; color: var(--text); text-decoration: none; }
+.ruta-item-nom:hover { color: var(--primary-dark); }
+.ruta-item-sub { display: block; font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+.ruta-item .map-links { display: flex; gap: 6px; margin-top: 7px; }
+.ruta-dist { flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--primary-dark); }
+.ruta-badge-mora {
+    display: inline-block; background: #FEE2E2; color: #DC2626;
+    font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+    vertical-align: middle;
+}
+
+.ruta-pick-tools { display: flex; gap: 8px; margin-bottom: 10px; }
+.ruta-pick-list { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
+.ruta-pick {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border: 1.5px solid #EEF2F6; border-radius: 10px; cursor: pointer;
+}
+.ruta-pick:hover { border-color: var(--primary); }
+.ruta-pick input { accent-color: var(--primary); width: 17px; height: 17px; flex-shrink: 0; }
+.ruta-pick-body { display: flex; flex-direction: column; min-width: 0; }
+.ruta-pick-body strong { font-size: 13.5px; }
+.ruta-pick-body small { color: var(--text-muted); font-size: 12px; }
 
 /* ---------- Sidebar (desktop) ---------- */
 .app-sidebar { display: none; }

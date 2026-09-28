@@ -11,12 +11,14 @@
             <code>/<?= esc($t['slug']) ?></code>
             <?= !empty($t['razon_social']) ? ' · ' . esc($t['razon_social']) : '' ?>
             <?= !empty($t['ruc']) ? ' · RUC ' . esc($t['ruc']) : '' ?>
+            <?= !empty($t['app_codigo']) ? ' · Código app: <code>' . esc($t['app_codigo']) . '</code> (para vincular gestores)' : '' ?>
         </p>
     </div>
     <div style="display:flex; gap:8px;">
         <a class="btn" href="<?= base_url('admin/tenants') ?>">← Tenants</a>
         <a class="btn" href="<?= base_url($t['slug'] . '/portal') ?>" target="_blank">Ver portal ↗</a>
         <a class="btn btn-primary" href="<?= base_url('admin/usuarios/nuevo?tenant=' . (int) $t['id'] . '&back=' . urlencode($backUrl)) ?>">+ Usuario</a>
+        <button type="button" class="btn btn-primary" onclick="document.getElementById('modal-cobro').hidden = false">Cobrar</button>
         <form method="post" action="<?= base_url('admin/tenants/' . $t['id'] . '/toggle') ?>" style="display:inline;"
               onsubmit="return confirm('¿<?= $t['estado'] === 'ACTIVO' ? 'Suspender' : 'Reactivar' ?> <?= esc($t['nombre'], 'attr') ?>?');">
             <?= csrf_field() ?>
@@ -109,27 +111,85 @@
                     <td class="text-muted text-sm"><?= $u['ultimo_login'] ? esc(date('d/m/Y H:i', strtotime($u['ultimo_login']))) : 'Nunca' ?></td>
                     <td><span class="tag <?= $u['estado'] === 'ACTIVO' ? 'tag-activo' : 'tag-inactivo' ?>"><?= esc($u['estado']) ?></span></td>
                     <td>
-                        <div style="display:flex; gap:6px;">
-                            <a class="btn btn-sm" href="<?= base_url('admin/usuarios/' . $u['id'] . '/editar?back=' . urlencode($backUrl)) ?>">Editar</a>
-                            <form method="post" action="<?= base_url('admin/usuarios/' . $u['id'] . '/toggle') ?>" style="display:inline;"
-                                  onsubmit="return confirm('¿<?= $u['estado'] === 'ACTIVO' ? 'Desactivar' : 'Activar' ?> a <?= esc($u['username'], 'attr') ?>?');">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="back" value="<?= esc($backUrl) ?>">
-                                <button class="btn btn-sm"><?= $u['estado'] === 'ACTIVO' ? 'Desactivar' : 'Activar' ?></button>
-                            </form>
-                            <button type="button" class="btn btn-sm"
-                                    onclick="modalReset(<?= (int) $u['id'] ?>, '<?= esc($u['username'], 'js') ?>')">Reset</button>
-                            <form method="post" action="<?= base_url('admin/tenants/' . $t['id'] . '/usuarios/' . $u['id'] . '/quitar') ?>" style="display:inline;"
-                                  onsubmit="return confirm('¿Quitar a <?= esc($u['username'], 'attr') ?> del tenant? (baja lógica, no se borra historial)');">
-                                <?= csrf_field() ?>
-                                <button class="btn btn-sm btn-danger">Quitar</button>
-                            </form>
+                        <div class="dd">
+                            <button type="button" class="btn btn-sm" data-dd>Acciones ▾</button>
+                            <div class="dd-menu" hidden>
+                                <a class="dd-item" href="<?= base_url('admin/usuarios/' . $u['id'] . '/editar?back=' . urlencode($backUrl)) ?>">Editar</a>
+                                <form method="post" action="<?= base_url('admin/usuarios/' . $u['id'] . '/toggle') ?>"
+                                      onsubmit="return confirm('¿<?= $u['estado'] === 'ACTIVO' ? 'Desactivar' : 'Activar' ?> a <?= esc($u['username'], 'attr') ?>?');">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="back" value="<?= esc($backUrl) ?>">
+                                    <button type="submit" class="dd-item"><?= $u['estado'] === 'ACTIVO' ? 'Desactivar' : 'Activar' ?></button>
+                                </form>
+                                <button type="button" class="dd-item"
+                                        onclick="modalReset(<?= (int) $u['id'] ?>, '<?= esc($u['username'], 'js') ?>')">Resetear clave</button>
+                                <form method="post" action="<?= base_url('admin/tenants/' . $t['id'] . '/usuarios/' . $u['id'] . '/quitar') ?>"
+                                      onsubmit="return confirm('¿Quitar a <?= esc($u['username'], 'attr') ?> del tenant? (baja lógica, no se borra historial)');">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="dd-item danger">Quitar del tenant</button>
+                                </form>
+                            </div>
                         </div>
                     </td>
                 </tr>
             <?php endforeach; ?>
         </tbody>
     </table>
+</div>
+
+<!-- Modal: cobro de suscripción del período (plan + usuarios extra) -->
+<div class="moverlay" id="modal-cobro" hidden onclick="if (event.target === this) this.hidden = true">
+    <div class="modal">
+        <div class="modal-head">
+            <b>Cobrar suscripción · <?= esc($cobro['periodo']) ?></b>
+            <button type="button" class="btn btn-sm" onclick="document.getElementById('modal-cobro').hidden = true">✕</button>
+        </div>
+        <div class="modal-body">
+            <?php if ($cobro['pagado']): ?>
+                <div class="flash flash-success" style="margin:0 0 12px;">El período <?= esc($cobro['periodo']) ?> ya está pagado.</div>
+            <?php endif; ?>
+            <table class="table" style="margin-bottom:14px;">
+                <tbody>
+                    <tr><td class="text-muted">Plan <?= esc($cobro['plan'] ?? '—') ?></td>
+                        <td style="text-align:right;" class="fw-bold">USD <?= number_format($cobro['precio'], 2) ?></td></tr>
+                    <tr><td class="text-muted">Usuarios activos (incluidos: <?= $cobro['incluidos'] < 0 ? 'ilimitados' : (int) $cobro['incluidos'] ?>)</td>
+                        <td style="text-align:right;"><?= (int) $cobro['usuarios'] ?></td></tr>
+                    <tr><td class="text-muted">Usuarios extra × USD <?= number_format($cobro['precio_extra'], 2) ?></td>
+                        <td style="text-align:right;"><?= (int) $cobro['extra'] ?> → USD <?= number_format($cobro['monto_extra'], 2) ?></td></tr>
+                    <tr><td class="fw-bold">Total a pagar</td>
+                        <td style="text-align:right;" class="fw-bold">USD <?= number_format($cobro['total'], 2) ?></td></tr>
+                </tbody>
+            </table>
+            <form method="post" action="<?= base_url('admin/tenants/' . $t['id'] . '/cobrar') ?>">
+                <?= csrf_field() ?>
+                <div class="fgroup" style="margin-bottom:10px;">
+                    <label>Método</label>
+                    <select class="inp" name="metodo">
+                        <option value="">—</option>
+                        <option>Transferencia</option><option>Depósito</option><option>Efectivo</option>
+                    </select>
+                </div>
+                <div class="fgroup" style="margin-bottom:10px;">
+                    <label>Referencia</label>
+                    <input class="inp" type="text" name="referencia" maxlength="60" placeholder="Nº de transferencia / depósito">
+                </div>
+                <div class="fgroup" style="margin-bottom:10px;">
+                    <label>Fecha de pago</label>
+                    <input class="inp" type="date" name="fecha_pago" value="<?= date('Y-m-d') ?>">
+                </div>
+                <div class="fgroup" style="margin-bottom:14px;">
+                    <label>Observación</label>
+                    <input class="inp" type="text" name="observacion" maxlength="200" placeholder="Opcional">
+                </div>
+                <div style="display:flex; gap:8px; justify-content:flex-end;">
+                    <button type="button" class="btn" onclick="document.getElementById('modal-cobro').hidden = true">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" <?= $cobro['pagado'] || $cobro['total'] <= 0 ? 'disabled' : '' ?>>
+                        Registrar cobro · USD <?= number_format($cobro['total'], 2) ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <div class="moverlay" id="mr" hidden onclick="if (event.target === this) mrClose()">

@@ -295,7 +295,29 @@ body {
 /* Modal generico (reset de clave) */
 .moverlay { position: fixed; inset: 0; background: rgba(26,32,44,.45); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
 .moverlay[hidden] { display: none; }
-.modal { background: #fff; border-radius: var(--radius); box-shadow: 0 18px 50px rgba(26,32,44,.25); width: 460px; max-width: 100%; padding: 22px 24px; }
-.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 16px; }
+.modal { background: #fff; border-radius: var(--radius); box-shadow: 0 18px 50px rgba(26,32,44,.25); width: 460px; max-width: 100%; padding: 22px 24px; max-height: calc(100vh - 48px); display: flex; flex-direction: column; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 16px; flex-shrink: 0; }
+.modal-body { overflow-y: auto; min-height: 0; }
 .modal-body p { margin: 0 0 6px; }
 .mr-pass { display: inline-block; font-size: 20px; font-weight: 700; letter-spacing: 2px; background: var(--primary-soft, #E6F9F2); padding: 10px 18px; border-radius: 8px; border: 1px solid var(--primary); color: var(--secondary-dark); margin: 8px 0; }
+
+/* ---------- Dropdown de acciones en tablas ---------- */
+.dd { position: relative; display: inline-block; }
+.dd-menu {
+    position: absolute; right: 0; top: calc(100% + 4px); z-index: 70;
+    min-width: 170px; background: var(--surface);
+    border: 1px solid #E2E8F0; border-radius: 10px; padding: 6px;
+    box-shadow: 0 10px 30px rgba(26, 32, 44, .18);
+    display: flex; flex-direction: column; gap: 2px;
+}
+.dd-menu[hidden] { display: none; }
+.dd-menu form { margin: 0; }
+.dd-item {
+    display: block; width: 100%; text-align: left;
+    padding: 8px 10px; border-radius: 7px; font-size: 13px; font-weight: 500;
+    color: var(--text); background: none; border: 0; cursor: pointer;
+    white-space: nowrap; text-decoration: none;
+}
+.dd-item:hover { background: #F1F5F9; }
+.dd-item.danger { color: #DC2626; }
+.dd-item.danger:hover { background: #FEE2E2; }

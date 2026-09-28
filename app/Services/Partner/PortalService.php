@@ -42,6 +42,13 @@ class PortalService
         return $this->tenants->where('slug', $slug)->first();
     }
 
+    /** Tenant por código de app (CONT-####) — vinculación rápida del gestor. */
+    public function tenantPorCodigo(string $codigo): ?array
+    {
+        return $this->tenants->where('app_codigo', $codigo)
+            ->where('estado', 'ACTIVO')->first();
+    }
+
     /**
      * Contexto de gestor logueado al portal:
      * [tenant, empleado, persona] o null si la sesión no calza con el slug.
@@ -87,6 +94,52 @@ class PortalService
         }
 
         return ['ok' => true, 'empleado' => $empleado];
+    }
+
+    /** Empleado por id — la app lo necesita completo (ruta) para crear solicitudes. */
+    public function empleadoDeId(int $empleadoId): ?array
+    {
+        return $this->empleados->find($empleadoId);
+    }
+
+    /** Nombre del gestor para mostrar en la app (persona del empleado). */
+    public function personaDeEmpleado(int $empleadoId): ?array
+    {
+        $empleado = $this->empleados->find($empleadoId);
+        if (!$empleado) return null;
+        $persona = $this->personas->find((int) $empleado['persona_id']);
+        return [
+            'nombre' => trim(($persona['nombres'] ?? '') . ' ' . ($persona['apellidos'] ?? '')),
+        ];
+    }
+
+    // ---------------------------------------------------------------
+    // App móvil (IONIC) — token firmado, sin estado en BD
+    // ---------------------------------------------------------------
+
+    /** Token de 30 días para la app: emp.tenant.exp.firma (HMAC). */
+    public function tokenApp(int $empleadoId, int $tenantId): string
+    {
+        $exp  = time() + 60 * 60 * 24 * 30;
+        $data = $empleadoId . '.' . $tenantId . '.' . $exp;
+        return $data . '.' . $this->firmaApp($data);
+    }
+
+    /** Valida token de app; devuelve empleado_id si calza con el tenant. */
+    public function tokenAppValido(string $token, int $tenantId): ?int
+    {
+        $p = explode('.', $token);
+        if (count($p) !== 4) return null;
+        [$emp, $tid, $exp, $sig] = $p;
+        if ((int) $tid !== $tenantId || (int) $exp < time()) return null;
+        if (!hash_equals($this->firmaApp($emp . '.' . $tid . '.' . $exp), $sig)) return null;
+        return (int) $emp;
+    }
+
+    private function firmaApp(string $data): string
+    {
+        $key = (string) (config('Encryption')->key ?? env('app.baseURL'));
+        return rtrim(strtr(base64_encode(hash_hmac('sha256', $data, $key, true)), '+/', '-_'), '=');
     }
 
     // ---------------------------------------------------------------
@@ -138,16 +191,41 @@ class PortalService
     /** @return array{solicitudes: array, pager: mixed} */
     public function desembolsosPendientes(int $tenantId, int $empleadoId): array
     {
+        $solicitudes = $this->solicitudes
+            ->select('solicitudes.*, personas.nombres, personas.apellidos, personas.telefono,
+                      personas.direccion, clientes.codigo, clientes.persona_id')
+            ->join('clientes', 'clientes.id = solicitudes.cliente_id')
+            ->join('personas', 'personas.id = clientes.persona_id')
+            ->where('solicitudes.tenant_id', $tenantId)
+            ->where('solicitudes.estado', SolicitudModel::DESEMBOLSO)
+            ->where('solicitudes.asignado_a', $empleadoId)
+            ->orderBy('solicitudes.fecha_desembolso', 'ASC')
+            ->paginate(10);
+
+        // Mejor dirección por persona — preferir la que tenga GPS guardado
+        $perIds = array_values(array_filter(array_map(
+            fn($s) => (int) ($s['persona_id'] ?? 0), $solicitudes
+        )));
+        $dirPorPersona = [];
+        if ($perIds) {
+            $dirs = (new PersonaDetalleModel('direccion'))
+                ->whereIn('persona_id', $perIds)
+                ->orderBy('(latitud IS NOT NULL)', 'DESC', false)
+                ->orderBy('id', 'DESC')
+                ->findAll();
+            foreach ($dirs as $d) {
+                if (!isset($dirPorPersona[$d['persona_id']])) {
+                    $dirPorPersona[$d['persona_id']] = $d;
+                }
+            }
+        }
+        foreach ($solicitudes as &$s) {
+            $s['dir_geo'] = $dirPorPersona[$s['persona_id']] ?? null;
+        }
+        unset($s);
+
         return [
-            'solicitudes' => $this->solicitudes
-                ->select('solicitudes.*, personas.nombres, personas.apellidos, clientes.codigo')
-                ->join('clientes', 'clientes.id = solicitudes.cliente_id')
-                ->join('personas', 'personas.id = clientes.persona_id')
-                ->where('solicitudes.tenant_id', $tenantId)
-                ->where('solicitudes.estado', SolicitudModel::DESEMBOLSO)
-                ->where('solicitudes.asignado_a', $empleadoId)
-                ->orderBy('solicitudes.fecha_desembolso', 'ASC')
-                ->paginate(10),
+            'solicitudes' => $solicitudes,
             'pager' => $this->solicitudes->pager,
         ];
     }
@@ -392,6 +470,9 @@ class PortalService
             'monto'        => $monto,
             'plazo_meses'  => $plazo,
             'frecuencia'   => ($d['frecuencia'] ?? '') ?: 'M',
+            // El gestor hereda el método de cálculo configurado por la empresa
+            'tipo_calculo' => in_array($tenant['tipo_calculo'] ?? '', ['FRANCES', 'FLAT', 'ALEMAN', 'ANTICIPADO'], true)
+                ? $tenant['tipo_calculo'] : 'FLAT',
             // El gestor puede bajar la tasa para negociar — nunca supera la del tenant
             'tasa_mensual' => min(max(0.0, (float) ($d['tasa_mensual'] ?? ($tenant['tasa_interes'] ?? 0))),
                                   (float) ($tenant['tasa_interes'] ?? 0)),
@@ -561,6 +642,77 @@ class PortalService
             'cobrado_hoy'   => round(array_sum(array_map(fn($p) => (float) $p['monto'], $vigentes)), 2),
             'cobrados_hoy'  => $cobrados,
         ];
+    }
+
+    /**
+     * Ruta de cobro del gestor: una parada por crédito con cuota que vence
+     * hoy o ya está vencida, con la mejor dirección (preferir la que tiene GPS).
+     * @return array<int, array>
+     */
+    public function rutaCobrosHoy(int $tenantId, int $empleadoId): array
+    {
+        $hoy      = date('Y-m-d');
+        $creditos = $this->cobrosDelGestor($tenantId, $empleadoId);
+
+        $paradas = [];
+        foreach ($creditos as $cr) {
+            $monto   = 0.0;
+            $vencida = false;
+            foreach ($cr['cuotas_pend'] ?? [] as $c) {
+                if ($c['fecha_vence'] <= $hoy) {
+                    $monto   += (float) $c['pendiente'];
+                    $vencida = $vencida || ($c['vencida'] ?? false);
+                }
+            }
+            if ($monto <= 0) continue;
+            $paradas[] = [
+                'sol_id'     => (int) $cr['id'],
+                'cliente_id' => (int) $cr['cliente_id'],
+                'nombre'     => trim($cr['nombres'] . ' ' . $cr['apellidos']),
+                'telefono'   => (string) ($cr['telefono'] ?? ''),
+                'codigo'     => $cr['codigo_credito'] ?: ('#' . $cr['id']),
+                'monto'      => round($monto, 2),
+                'vencida'    => $vencida,
+            ];
+        }
+        if (!$paradas) return [];
+
+        // persona_id por cliente → mejor dirección (con GPS primero)
+        $cliIds = array_column($paradas, 'cliente_id');
+        $perPorCli = [];
+        foreach ($this->clientes->select('id, persona_id')->whereIn('id', $cliIds)->findAll() as $c) {
+            $perPorCli[(int) $c['id']] = (int) $c['persona_id'];
+        }
+        $perIds = array_values(array_filter($perPorCli));
+        $dirPorPersona = [];
+        if ($perIds) {
+            $dirs = (new PersonaDetalleModel('direccion'))
+                ->whereIn('persona_id', $perIds)
+                ->orderBy('(latitud IS NOT NULL)', 'DESC', false)
+                ->orderBy('id', 'DESC')
+                ->findAll();
+            foreach ($dirs as $d) {
+                if (!isset($dirPorPersona[$d['persona_id']])) {
+                    $dirPorPersona[$d['persona_id']] = $d;
+                }
+            }
+        }
+
+        foreach ($paradas as &$p) {
+            $dir = $dirPorPersona[$perPorCli[$p['cliente_id']] ?? 0] ?? null;
+            $lat = $dir['latitud']  ?? null;
+            $lng = $dir['longitud'] ?? null;
+            $p['lat'] = is_numeric($lat) ? (float) $lat : null;
+            $p['lng'] = is_numeric($lng) ? (float) $lng : null;
+            $p['dir'] = $dir
+                ? trim(implode(', ', array_filter([
+                    $dir['barrio'] ?? '', $dir['ciudad'] ?? '', $dir['departamento'] ?? ''])))
+                : '';
+            $p['detalle'] = trim((string) ($dir['detalle'] ?? ''));
+        }
+        unset($p);
+
+        return $paradas;
     }
 
     /**

@@ -29,6 +29,28 @@ $routes->get('(:segment)/portal/suspendida', 'Partner\PortalController::suspendi
 $routes->get('(:segment)/portal/panel',  'Partner\PortalController::panel/$1');    // app del gestor
 $routes->get('(:segment)/portal/perfil', 'Partner\PortalController::perfil/$1');   // perfil del gestor
 $routes->get('(:segment)/portal/salir',  'Partner\PortalController::salir/$1');
+$routes->get('resolve/(:segment)',            'Partner\ConnectController::resolve/$1');   // código empresa → tenant
+$routes->options('resolve/(:segment)',        'Partner\ConnectController::opciones');
+$routes->options('(:segment)/connect',        'Partner\ConnectController::opciones');     // app IONIC — CORS
+$routes->options('(:segment)/connect/(:any)', 'Partner\ConnectController::opciones');
+$routes->get('(:segment)/connect',            'Partner\ConnectController::index/$1');     // handshake (valida URL)
+$routes->post('(:segment)/connect/login',     'Partner\ConnectController::login/$1');     // carnet + PIN → token
+$routes->get('(:segment)/connect/notificaciones', 'Partner\ConnectController::notificaciones/$1'); // avisos del gestor
+
+// App IONIC — servicios del gestor (Bearer token)
+$routes->get('(:segment)/connect/home',        'Partner\ConnectController::home/$1');           // resumen del día
+$routes->get('(:segment)/connect/cartera',     'Partner\ConnectController::cartera/$1');        // clientes del gestor
+$routes->get('(:segment)/connect/cliente/(:num)', 'Partner\ConnectController::cliente/$1/$2');  // ficha del cliente
+$routes->get('(:segment)/connect/cobros',      'Partner\ConnectController::cobros/$1');         // cuotas por cobrar
+$routes->post('(:segment)/connect/cobros/(:num)/abonar', 'Partner\ConnectController::abonarCobro/$1/$2'); // cobro en campo
+$routes->get('(:segment)/connect/cobros/(:num)/recibo',  'Partner\ConnectController::reciboCobro/$1/$2'); // voucher
+$routes->get('(:segment)/connect/ruta',        'Partner\ConnectController::ruta/$1');           // paradas del día (GPS)
+$routes->get('(:segment)/connect/desembolsos', 'Partner\ConnectController::desembolsos/$1');    // por entregar
+$routes->post('(:segment)/connect/desembolsos/(:num)/entregar', 'Partner\ConnectController::entregarDesembolso/$1/$2');
+$routes->post('(:segment)/connect/solicitud',  'Partner\ConnectController::crearSolicitud/$1'); // nueva solicitud
+$routes->get('(:segment)/connect/actividad',   'Partner\ConnectController::actividad/$1');      // solicitudes del gestor
+$routes->get('(:segment)/connect/arqueo',      'Partner\ConnectController::arqueo/$1');         // "Mi caja"
+$routes->get('(:segment)/connect/simulador',   'Partner\ConnectController::simulador/$1');      // plan de cuotas
 $routes->get('(:segment)/portal/solicitar',    'Partner\PortalController::solicitar/$1');           // público — solicitar crédito
 $routes->post('(:segment)/portal/solicitar',   'Partner\PortalController::guardarSolicitar/$1');
 $routes->get('(:segment)/portal/solicitud',    'Partner\PortalController::solicitud/$1');
@@ -37,6 +59,7 @@ $routes->get('(:segment)/portal/desembolso',   'Partner\PortalController::desemb
 $routes->post('(:segment)/portal/desembolso/(:num)/entregar', 'Partner\PortalController::entregarDesembolso/$1/$2');
 $routes->get('(:segment)/portal/recuperacion', 'Partner\PortalController::recuperacion/$1');
 $routes->get('(:segment)/portal/cobros',       'Partner\PortalController::cobros/$1');     // cobros de su cartera
+$routes->get('(:segment)/portal/mapa',         'Partner\PortalController::mapa/$1');       // ruta de cobro en mapa
 $routes->post('(:segment)/portal/cobros/(:num)/abonar', 'Partner\PortalController::abonarPortal/$1/$2');
 $routes->get('(:segment)/portal/cobros/(:num)/recibo',  'Partner\PortalController::reciboCobro/$1/$2');
 $routes->get('(:segment)/portal/arqueo',       'Partner\PortalController::arqueo/$1');     // "Mi caja" — arqueo del día
@@ -61,6 +84,7 @@ $routes->group('admin', ['filter' => 'admin', 'namespace' => 'App\Controllers\Ad
     $routes->post('tenants',              'TenantController::guardar');
     $routes->get('tenants/(:num)',        'TenantController::ver/$1');
     $routes->post('tenants/(:num)/toggle','TenantController::toggle/$1');
+$routes->post('tenants/(:num)/cobrar','TenantController::cobrar/$1');
     $routes->post('tenants/(:num)/usuarios/(:num)/quitar', 'TenantController::quitarUsuario/$1/$2');
 
     // Usuarios de todos los tenants: listado, alta, edición, estado, clave

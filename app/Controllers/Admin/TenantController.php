@@ -77,6 +77,7 @@ class TenantController extends BaseController
             'title'    => $t['nombre'] . ' — Admin',
             't'        => $t,
             'usuarios' => $this->svc->usuariosDe($id),
+            'cobro'    => $this->svc->cobroMes($id),
         ]);
     }
 
@@ -86,6 +87,14 @@ class TenantController extends BaseController
         $err = $this->svc->toggle($id);
         return redirect()->back()
             ->with($err ? 'error' : 'success', $err ?: 'Estado del tenant actualizado.');
+    }
+
+    /** POST /admin/tenants/{id}/cobrar — registra el cobro del período (plan + extras). */
+    public function cobrar(int $id)
+    {
+        $err = $this->svc->cobrarSuscripcion($id, $this->request->getPost(), (int) session('user_id'));
+        return redirect()->to('/admin/tenants/' . $id)
+            ->with($err ? 'error' : 'success', $err ?: 'Cobro de suscripción registrado.');
     }
 
     /** POST /admin/tenants/{tid}/usuarios/{uid}/quitar — quita usuario del tenant. */
