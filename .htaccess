@@ -1,0 +1,13 @@
+# Contamos — redirige todo al front controller en public/
+# Permite acceder por http://localhost/cfsi/ sin exponer /public/ en la URL
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /cfsi/
+
+    # No reescribir peticiones que ya apuntan a public/
+    RewriteCond %{REQUEST_URI} !^/cfsi/public/ [NC]
+
+    # Reescribir todo hacia public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

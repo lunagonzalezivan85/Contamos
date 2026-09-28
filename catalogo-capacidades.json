@@ -1,0 +1,62 @@
+{
+  "_meta": {
+    "descripcion": "Catálogo de capacidades del motor de crédito CFSI. El Agente 2 (empresas simuladas) compara los requerimientos de cada empresa contra este catálogo para generar FEATURE GAPs.",
+    "generado": "2026-09-26",
+    "fuente": "AUDITORIA.md + inspección de código (planPagos, aprobarPago, schema solicitudes/cuotas/pagos/tenants)"
+  },
+  "producto_credito": {
+    "frecuencia_pago": ["diaria", "dias_inter_semana", "semanal", "quincenal", "mensual"],
+    "frecuencia_pago_notas": {
+      "diaria": "D — paso 1 día",
+      "dias_inter_semana": "DI — N días por semana (aprox 4.33×dias pagos/mes)",
+      "quincenal": "Q — cada 15 días (NO quincena calendario real)"
+    },
+    "calculo_interes": ["saldo_insoluto"],
+    "tipo_cuota": ["fija_frances"],
+    "calendario_irregular": false,
+    "periodo_gracia": "parcial_fecha_primer_pago_manual",
+    "refinanciamiento": false,
+    "reestructuracion": false,
+    "interes_anticipado": false,
+    "mora": "configurable_tenant_mora_diaria_pct_post_vencimiento_sobre_pendiente",
+    "pronto_pago": "configurable_tenant_pronto_pago_pct_descuento_interes_pendiente",
+    "saldo_a_favor": "excedente_sobrepago_se_acumula_en_solicitudes_saldo_favor",
+    "monedas": ["C$"],
+    "moneda_notas": "tenants.moneda existe pero vistas hardcodean C$",
+    "sucursales": "ruta_varchar_libre",
+    "comisiones": false,
+    "seguros": false,
+    "garantias": "texto_contrato_sin_estructura",
+    "credito_grupal": false,
+    "multi_credito_por_cliente": true,
+    "plazo_max_meses": "configurable_tenant_default_24",
+    "tasa_mensual_default": "configurable_tenant",
+    "monto_min_max": "sin_limites_formales"
+  },
+  "pagos": {
+    "estados": ["REVISION", "APLICADO", "RECHAZADO", "REVERTIDO"],
+    "tipos": ["PAGO", "PROMESA"],
+    "metodos": ["EFECTIVO", "TRANSFERENCIA", "DEPOSITO", "OTRO"],
+    "aplicacion": "fifo_cuotas_pendientes",
+    "cuota_destino_opcional": true,
+    "parcial": true,
+    "adelantado": "si_con_pronto_pago_opcional_descuento_interes",
+    "sobrepago": "excedente_a_saldo_favor_del_cliente",
+    "reversion": "contra_pago_negativo_lifo",
+    "reversion_notas": "desaplica por cuota agregada, no por pago origen",
+    "promesa_pago": "tipo PROMESA en REVISION → cumplio → PAGO",
+    "recibo": "voucher imprimible + compartir PNG",
+    "aprobacion_doble_guion": "oficina aprueba REVISION→APLICADO"
+  },
+  "operacion": {
+    "multi_tenant": true,
+    "portal_gestor": true,
+    "portal_cliente": false,
+    "arqueo_gestor": "tabla_existe_parcial",
+    "gestiones_cobro": false,
+    "cobro_en_campo": true,
+    "desembolso_en_campo": true,
+    "auditoria_pagos": "sin_log_de_estados",
+    "permisos_por_tenant": true
+  }
+}

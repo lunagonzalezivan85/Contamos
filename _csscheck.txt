@@ -1,0 +1,4 @@
+﻿http://localhost/cfsi/css/app.css => 200 (46519 b)
+http://localhost/cfsi/css/landing.css => 200 (7198 b)
+http://localhost/cfsi/css/auth.css => 200 (3690 b)
+http://localhost/cfsi/js/app.js => 200 (28284 b)

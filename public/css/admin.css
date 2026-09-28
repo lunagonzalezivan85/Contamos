@@ -1,0 +1,301 @@
+/* ==========================================================================
+   Contamos — admin.css
+   Layout del administrador del sistema (distinto al partner)
+   ========================================================================== */
+
+:root {
+    --primary: #30CB9A;
+    --primary-light: #5DD9B3;
+    --primary-dark: #1FA87C;
+    --accent: #6366F1;
+    --accent-light: #818CF8;
+    --accent-soft: #EEF0FE;
+    --secondary: #2E3542;
+    --secondary-dark: #141824;
+    --bg: #F1F3F8;
+    --surface: #FFFFFF;
+    --text: #2E3542;
+    --text-muted: #8A94A6;
+    --danger: #E5484D;
+    --warning: #B25E09;
+    --success: #0D8A64;
+    --sidebar-w: 260px;
+    --radius: 16px;
+    --shadow: 0 8px 30px rgba(46, 53, 66, .08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+}
+
+/* ---------- Sidebar admin (acento índigo) ---------- */
+.sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--secondary-dark);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+}
+
+.sidebar-brand {
+    padding: 24px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sidebar-brand .dot {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.sidebar-brand .name { font-size: 18px; font-weight: 700; }
+
+.sidebar-brand .badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    background: var(--accent);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 16px 12px; }
+.nav-item { margin-bottom: 4px; }
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    color: rgba(255, 255, 255, .75);
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 14px;
+    transition: background .15s, color .15s;
+}
+
+.nav-link:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.nav-link.active { background: var(--accent); color: #fff; }
+
+.nav-children {
+    margin-left: 20px;
+    border-left: 1px solid rgba(255, 255, 255, .1);
+    padding-left: 8px;
+}
+
+.nav-children .nav-link { font-size: 13px; padding: 9px 12px; }
+
+.nav-group-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    color: rgba(255, 255, 255, .5);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255, 255, 255, .08);
+    font-size: 13px;
+    color: rgba(255, 255, 255, .6);
+}
+
+.sidebar-footer a { color: var(--accent-light); text-decoration: none; }
+
+/* ---------- Main ---------- */
+.main { margin-left: var(--sidebar-w); min-height: 100vh; }
+
+.topbar {
+    background: var(--surface);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.topbar h2 { font-size: 18px; font-weight: 600; }
+.topbar .user { font-size: 14px; color: var(--text-muted); }
+
+.content { padding: 32px; }
+
+/* ---------- Flash ---------- */
+.flash {
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+.flash-error   { background: #FDECEA; color: var(--danger); }
+.flash-warning { background: #FFF4E5; color: var(--warning); }
+.flash-success { background: var(--primary-soft, #E6F9F2); color: var(--success); }
+
+/* ---------- Cards ---------- */
+.card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+.card:last-child { margin-bottom: 0; }
+
+.card-title { margin-bottom: 8px; }
+.card-subtitle { color: var(--text-muted); font-size: 14px; }
+
+/* ---------- Stats grid ---------- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+.stat-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px;
+}
+
+.stat-card .num {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--secondary-dark);
+    line-height: 1.1;
+}
+
+.stat-card .lbl {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* ---------- Tabla ---------- */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.table th {
+    text-align: left;
+    padding: 12px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-muted);
+    border-bottom: 2px solid #EDF0F5;
+}
+
+.table td {
+    padding: 13px 14px;
+    border-bottom: 1px solid #F1F3F8;
+}
+
+.table tr:hover td { background: #FAFBFD; }
+
+.tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.tag-activo   { background: var(--primary-soft, #E6F9F2); color: var(--success); }
+.tag-inactivo { background: #FDECEA; color: var(--danger); }
+
+/* ---------- Utilidades ---------- */
+.text-muted { color: var(--text-muted); }
+.text-sm { font-size: 14px; }
+.fw-bold { font-weight: 700; }
+.mt-4 { margin-top: 24px; }
+
+@media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); transition: transform .25s; }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; }
+    .content { padding: 20px; }
+}
+
+/* ---------- Botones y formularios (páginas admin nuevas) ---------- */
+.btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 8px; font-size: 13.5px; font-weight: 600;
+    border: 1.5px solid #E2E8F0; background: #fff; color: var(--text);
+    cursor: pointer; text-decoration: none;
+}
+.btn:hover { border-color: var(--primary); color: var(--primary-dark); }
+.btn-sm { padding: 5px 10px; font-size: 12.5px; }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); color: #fff; }
+.btn-danger { color: var(--danger); }
+.btn-danger:hover { border-color: var(--danger); color: var(--danger); }
+
+.inp, select.inp {
+    width: 100%; padding: 9px 12px; border: 1.5px solid #E2E8F0; border-radius: 8px;
+    font-size: 14px; background: #fff; color: var(--text);
+}
+.inp:focus, select.inp:focus { outline: none; border-color: var(--primary); }
+.fgroup { margin-bottom: 14px; }
+.fgroup label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.filter-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 18px; }
+.filter-bar .fgroup { margin: 0; min-width: 160px; }
+
+.tag-info { background: #E8F0FE; color: #1A73E8; }
+.tag-warn { background: #FFF4E5; color: var(--warning); }
+.toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
+.page-title { font-size: 22px; font-weight: 700; }
+.page-sub { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* Listado de tenants (filas clicables hacia la ficha) */
+.tn-row { display: flex; align-items: center; gap: 18px; padding: 14px 20px; text-decoration: none; color: inherit; border-bottom: 1px solid #EEF2F6; transition: background .12s; }
+.tn-row:last-child { border-bottom: none; }
+.tn-row:hover { background: #FAFBFD; }
+.tn-id { flex: 0 0 260px; display: flex; flex-direction: column; gap: 2px; }
+.tn-mid { flex: 1; display: flex; gap: 20px; font-size: 13px; flex-wrap: wrap; }
+.tn-tags { display: flex; align-items: center; gap: 8px; }
+.tn-arrow { font-size: 18px; color: var(--text-muted); transition: transform .12s, color .12s; }
+.tn-row:hover .tn-arrow { transform: translateX(3px); color: var(--primary); }
+
+/* Banner de clave temporal tras reset rapido */
+.pass-reset { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--primary-soft, #E6F9F2); border: 1px solid var(--primary); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 20px; }
+.pass-reset-info { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 2px; }
+.pass-reset code { font-size: 18px; font-weight: 700; letter-spacing: 2px; background: #fff; padding: 8px 16px; border-radius: 8px; border: 1px solid #CBE7DC; color: var(--secondary-dark); }
+
+/* Modal generico (reset de clave) */
+.moverlay { position: fixed; inset: 0; background: rgba(26,32,44,.45); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
+.moverlay[hidden] { display: none; }
+.modal { background: #fff; border-radius: var(--radius); box-shadow: 0 18px 50px rgba(26,32,44,.25); width: 460px; max-width: 100%; padding: 22px 24px; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 16px; }
+.modal-body p { margin: 0 0 6px; }
+.mr-pass { display: inline-block; font-size: 20px; font-weight: 700; letter-spacing: 2px; background: var(--primary-soft, #E6F9F2); padding: 10px 18px; border-radius: 8px; border: 1px solid var(--primary); color: var(--secondary-dark); margin: 8px 0; }

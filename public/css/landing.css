@@ -1,0 +1,119 @@
+﻿/* ==========================================================================
+   LANDING PÚBLICA DEL PORTAL — /{slug}/portal
+   (lp-*) cargada solo por partner/portal/landing.php
+   ==========================================================================
+/* ---------- Portal — landing pública ---------- */
+.lp-body { background: var(--bg); color: var(--text); font-family: inherit; min-height: 100vh; display: flex; flex-direction: column; }
+.lp-top {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 16px 24px; background: var(--surface);
+    border-bottom: 1px solid #EEF2F6; position: sticky; top: 0; z-index: 20;
+}
+.lp-brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: var(--text); }
+.lp-brand:hover { text-decoration: none; }
+.lp-logo { height: 36px; width: auto; border-radius: 8px; object-fit: contain; }
+.lp-brand-nombre { font-size: 17px; font-weight: 700; color: var(--text); }
+.lp-logo-fallback {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 18px;
+}
+
+/* Hero destacado con nombre de la empresa */
+.lp-hero {
+    position: relative;
+    padding: 80px 24px 90px;
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+    color: #fff;
+    text-align: center;
+    overflow: hidden;
+}
+.lp-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 85% 15%, rgba(255,255,255,.14) 0, transparent 40%),
+                radial-gradient(circle at 10% 85%, rgba(255,255,255,.10) 0, transparent 40%);
+    pointer-events: none;
+}
+.lp-hero-wave { position: absolute; left: 0; right: 0; bottom: -1px; height: 46px; background: var(--bg); clip-path: polygon(0 100%, 0 30%, 50% 100%, 100% 30%, 100% 100%); }
+.lp-hero-inner { position: relative; max-width: 700px; margin: 0 auto; }
+.lp-hero-logo { height: 74px; width: auto; object-fit: contain; border-radius: 16px; background: #fff; padding: 8px 12px; box-shadow: 0 8px 24px rgba(0,0,0,.18); margin-bottom: 18px; }
+.lp-lema  { display: inline-block; padding: 6px 18px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3); color: #fff; border-radius: 999px; font-size: 13px; font-weight: 600; margin: 0 0 18px; backdrop-filter: blur(4px); }
+.lp-titulo { font-size: clamp(34px, 6vw, 56px); font-weight: 800; letter-spacing: -1px; margin: 0 0 6px; line-height: 1.05; }
+.lp-razon  { font-size: 15px; color: rgba(255,255,255,.85); margin: 0 0 14px; font-weight: 500; }
+.lp-sub    { font-size: 17px; color: rgba(255,255,255,.9); max-width: 520px; margin: 0 auto 30px; }
+.lp-cta .btn-lg { padding: 15px 30px; font-size: 16px; border-radius: 12px; box-shadow: 0 10px 26px rgba(0,0,0,.22); }
+
+/* Secciones genéricas */
+.lp-wrap { max-width: 940px; margin: 0 auto; text-align: center; }
+.lp-sec { padding: 56px 24px; }
+.lp-sec-alt { background: #F4F7F6; }
+.lp-sec-tag { display: inline-block; padding: 6px 16px; background: var(--primary-soft); color: var(--primary-dark); border-radius: 999px; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+.lp-sec-titulo { font-size: clamp(26px, 3.6vw, 36px); font-weight: 800; letter-spacing: -0.5px; margin: 0 0 16px; }
+.lp-about-text { font-size: 16.5px; color: var(--text-muted); line-height: 1.75; margin: 0 auto; max-width: 700px; }
+
+.lp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: 10px; }
+.lp-card {
+    background: var(--surface); border-radius: 18px; padding: 26px 22px;
+    border: 1px solid #EEF2F6; box-shadow: var(--shadow); text-align: center;
+    transition: transform .18s, box-shadow .18s;
+}
+.lp-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.lp-card-ico {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 54px; height: 54px; border-radius: 16px;
+    background: var(--primary-soft); color: var(--primary-dark); margin-bottom: 14px;
+}
+.lp-card h3 { font-size: 17px; font-weight: 700; margin: 0 0 10px; }
+.lp-card p  { font-size: 14px; color: var(--text-muted); margin: 4px 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.lp-muted { font-size: 12.5px; }
+
+/* Misión / Visión / Valores */
+.lp-grid-mvv { margin-top: 6px; }
+.lp-mvv { text-align: left; }
+.lp-mvv h3 { margin-bottom: 10px; }
+.lp-mvv-text { font-size: 14.5px; color: var(--text-muted); line-height: 1.65; justify-content: flex-start; }
+.lp-grid-contact { margin-top: 6px; }
+
+/* Calculadora de préstamo */
+.lp-calc {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 26px;
+    max-width: 760px; margin-left: auto; margin-right: auto;
+    background: var(--surface); border-radius: 20px; padding: 26px;
+    border: 1px solid #EEF2F6; box-shadow: var(--shadow); text-align: left;
+}
+.lp-calc-form { display: flex; flex-direction: column; gap: 14px; }
+.lp-calc-form .form-group { margin: 0; }
+.lp-calc-res {
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    background: linear-gradient(135deg, var(--primary-soft), #fff);
+    border-radius: 16px; padding: 26px 20px; text-align: center;
+}
+.lp-calc-label { font-size: 13px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin: 0 0 6px; }
+.lp-calc-cuota { font-size: clamp(30px, 4.5vw, 42px); font-weight: 800; color: var(--primary-dark); margin: 0 0 16px; letter-spacing: -0.5px; }
+.lp-calc-total { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.lp-calc-total > div {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 14px; background: #fff; border-radius: 10px; border: 1px solid #EEF2F6;
+}
+.lp-calc-total span { font-size: 13px; color: var(--text-muted); }
+.lp-calc-total strong { font-size: 15px; color: var(--text); }
+@media (max-width: 640px) { .lp-calc { grid-template-columns: 1fr; } }
+
+/* Banda CTA final */
+.lp-cta-band {
+    padding: 64px 24px;
+    background: linear-gradient(135deg, #2E3542, #1A202C);
+    color: #fff; text-align: center;
+}
+.lp-cta-band h2 { font-size: clamp(24px, 4vw, 34px); font-weight: 800; margin: 0 0 10px; letter-spacing: -0.4px; }
+.lp-cta-band p  { font-size: 16px; color: rgba(255,255,255,.8); margin: 0 0 26px; }
+.lp-btn-light { background: var(--primary); color: #fff; border: none; padding: 15px 32px; font-size: 16px; border-radius: 12px; font-weight: 700; }
+.lp-btn-light:hover { background: var(--primary-dark); }
+
+.lp-foot { padding: 22px; text-align: center; color: var(--text-muted); font-size: 13px; border-top: 1px solid #EEF2F6; }
+.lp-conami { display: inline-flex; align-items: center; gap: 7px; margin: 0 0 10px; padding: 7px 14px; border-radius: 999px; background: #EBF7EF; color: #1E7B45; font-weight: 600; }
+.lp-conami svg { flex: none; }
+.lp-volver { display: inline-flex; align-items: center; gap: 4px; margin-top: 14px; color: var(--primary-dark); font-size: 13.5px; font-weight: 600; text-decoration: none; }
+.lp-volver:hover { text-decoration: underline; }

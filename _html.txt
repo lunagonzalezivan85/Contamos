@@ -1,0 +1,5 @@
+﻿<script  id="debugbar_loader" data-time="1790443385.757275" src="http://localhost/cfsi/?debugbar">
+<link rel="stylesheet" href="http://localhost/cfsi/css/landing.css">
+CT css: text/css
+app.baseURL = 'http://localhost/cfsi/'
+# app_baseURL = ''
