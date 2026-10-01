@@ -49,8 +49,8 @@ function Subir([string]$local, [string]$rel) {
     $url    = "$FtpHost$RemoteDir$relUrl"
     # --ftp-create-dirs crea las carpetas remotas que falten
     $out = curl.exe -s -T "$local" --user $cred --ftp-create-dirs "$url" 2>&1
-    if ($LASTEXITCODE -ne 0) { Write-Host "  ✗ $rel  ($out)" -ForegroundColor Red; return $false }
-    Write-Host "  ↑ $rel" -ForegroundColor DarkGray
+    if ($LASTEXITCODE -ne 0) { Write-Host "  X $rel  ($out)" -ForegroundColor Red; return $false }
+    Write-Host "  -> $rel" -ForegroundColor DarkGray
     return $true
 }
 
@@ -58,12 +58,12 @@ function Subir([string]$local, [string]$rel) {
 if ($Borrar) {
     $url = "$FtpHost$RemoteDir" + ($Borrar -replace '\\', '/')
     curl.exe -s --user $cred --quote "DELE $RemoteDir$($Borrar -replace '\\','/')" "$FtpHost/" 2>&1 | Out-Null
-    Write-Host "Borrado remoto: $Borrar (si existía)" -ForegroundColor Yellow
+    Write-Host "Borrado remoto: $Borrar (si existia)" -ForegroundColor Yellow
     exit 0
 }
 
 # ---------------- recolectar archivos ----------------
-$ultima = (Test-Path $stamp) ? (Get-Item $stamp).LastWriteTime : [DateTime]::MinValue
+$ultima = if (Test-Path $stamp) { (Get-Item $stamp).LastWriteTime } else { [DateTime]::MinValue }
 
 $files = @()
 foreach ($d in $dirsDeploy) {
@@ -81,7 +81,7 @@ foreach ($d in $dirsDeploy) {
 }
 
 if ($files.Count -eq 0) {
-    Write-Host "Nada que subir — sin cambios desde el último deploy." -ForegroundColor Green
+    Write-Host "Nada que subir - sin cambios desde el ultimo deploy." -ForegroundColor Green
     exit 0
 }
 
@@ -94,10 +94,10 @@ foreach ($f in $files) {
 
 if ($fail.Count -eq 0) {
     New-Item -Path $stamp -ItemType File -Force | Out-Null   # toca el sello
-    Write-Host "Deploy listo — $ok archivo(s) publicados." -ForegroundColor Green
-    Write-Host "Si subiste migraciones (app/Database/Migrations), corré las migraciones o importá el SQL en el server." -ForegroundColor Yellow
+    Write-Host "Deploy listo - $ok archivo(s) publicados." -ForegroundColor Green
+    Write-Host "Si subiste migraciones (app/Database/Migrations), corre las migraciones o importa el SQL en el server." -ForegroundColor Yellow
 } else {
-    Write-Host "Terminó con $($fail.Count) error(es):" -ForegroundColor Red
+    Write-Host "Termino con $($fail.Count) error(es):" -ForegroundColor Red
     $fail | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
-    Write-Host "El sello NO se actualizó — reintentá corregidos los errores." -ForegroundColor Yellow
+    Write-Host "El sello NO se actualizo - reintenta corregidos los errores." -ForegroundColor Yellow
 }

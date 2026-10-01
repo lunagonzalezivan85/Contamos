@@ -68,11 +68,15 @@ $titulos = [
                                 <span class="oui-sub"><?= esc($s['destino'] ?? 'Préstamo aprobado') ?> · Entrega: <?= esc($fDes ?: 'sin fecha') ?></span>
                             </span>
                             <span class="badge <?= $vencio ? 'badge-soft' : '' ?>"><?= $vencio ? 'Hoy' : 'Pendiente' ?></span>
+                            <?php if ($puede_entregar ?? true): ?>
                             <form method="post" action="<?= base_url($slug . '/portal/desembolso/' . $s['id'] . '/entregar') ?>"
                                   onsubmit="return confirm('¿Confirmar que entregaste el dinero?');">
                                 <?= csrf_field() ?>
                                 <button class="btn btn-primary btn-sm"><?= icon('check', 14) ?> Entregado</button>
                             </form>
+                            <?php else: ?>
+                                <span class="oui-sub" title="La oficina confirmará la entrega">Entrega en oficina</span>
+                            <?php endif; ?>
                         </div>
                         <?php if ($tel !== '' || $urlWaze): ?>
                         <div class="cli-acciones">
@@ -93,7 +97,14 @@ $titulos = [
         <?php if (empty($clientes)): ?>
             <p class="card-subtitle">No hay clientes en tu cartera.</p>
         <?php else: ?>
-            <div class="cli-list">
+            <div class="cli-buscar">
+                <?= icon('search', 16) ?>
+                <input type="text" id="cli-buscar" autocomplete="off"
+                       placeholder="Buscar por nombre, código o cédula…"
+                       data-buscar="#cli-list .cli-item" data-empty="cli-vacio">
+            </div>
+            <p class="cli-buscar-vacio" id="cli-vacio" hidden>Sin resultados para esa búsqueda.</p>
+            <div class="cli-list" id="cli-list">
                 <?php foreach ($clientes as $c): ?>
                     <?php
                     $ini    = mb_strtoupper(mb_substr(trim($c['nombres']), 0, 1) . mb_substr(trim($c['apellidos']), 0, 1));
@@ -171,6 +182,7 @@ $titulos = [
                     <?php
                     $iniS = mb_strtoupper(mb_substr(trim($s['nombres']), 0, 1) . mb_substr(trim($s['apellidos']), 0, 1));
                     $fSol = !empty($s['created_at']) ? date('d/m/Y', strtotime($s['created_at'])) : '';
+                    $editableSol = in_array($s['estado'], ['CREADA', 'REVISION'], true);
                     ?>
                     <div class="cli-item">
                         <a class="cli-main" href="<?= base_url($slug . '/portal/cliente/' . $s['cliente_id']) ?>">
@@ -181,12 +193,49 @@ $titulos = [
                                     <span class="sol-monto"><?= esc($m2) ?> <?= number_format((float) ($s['monto_aprobado'] ?: $s['monto']), 0) ?></span>
                                 </span>
                                 <span class="cli-sub"><?= esc($s['destino'] ?? 'Solicitud de crédito') ?> · <?= esc($fSol) ?></span>
+                                <?php if (!empty($s['nota_revision']) && $s['estado'] === 'REVISION'): ?>
+                                    <span class="cli-sub sol-nota-rev"><?= icon('message-square', 12) ?> <?= esc($s['nota_revision']) ?></span>
+                                <?php endif; ?>
                             </span>
                             <span class="badge <?= $stCls[$s['estado']] ?? '' ?>"><?= esc($s['estado']) ?></span>
                         </a>
+                        <?php if ($editableSol): ?>
+                            <a class="cli-act" href="<?= base_url($slug . '/portal/solicitud/' . $s['id'] . '/editar') ?>">
+                                <?= icon('edit', 14) ?> Editar
+                            </a>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             </div>
+        <?php endif; ?>
+
+        <!-- Feed de eventos: quién creó/movió/aprobó cada solicitud de la cartera -->
+        <?php if (!empty($eventos)): ?>
+            <h4 class="card-title" style="margin-top:20px;"><?= icon('activity', 16) ?> Historial de movimientos</h4>
+            <ul class="tl">
+                <?php foreach ($eventos as $ev): ?>
+                    <?php
+                    $acc = $ev['accion'] ?? 'ESTADO';
+                    $txt = $acc === 'CREADO'  ? 'Solicitud creada'
+                         : ($acc === 'EDITADO' ? 'Datos actualizados'
+                         : ('Pasó a ' . mb_strtolower($ev['estado'] ?? '')));
+                    $cliEv = trim(($ev['nombres'] ?? '') . ' ' . ($ev['apellidos'] ?? ''));
+                    ?>
+                    <li class="tl-item">
+                        <div class="tl-dot tl-<?= strtolower($acc) ?>"></div>
+                        <div class="tl-body">
+                            <div class="tl-top">
+                                <strong><?= esc($cliEv !== '' ? $cliEv : 'Solicitud #' . $ev['solicitud_id']) ?></strong>
+                                <?php if (!empty($ev['estado'])): ?>
+                                    <span class="badge st-<?= in_array($ev['estado'], ['APROBADA','ACTIVO'], true) ? 'ok' : (in_array($ev['estado'], ['REVISION','DESEMBOLSO'], true) ? 'warn' : 'info') ?>"><?= esc($ev['estado']) ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <p class="tl-txt"><?= esc($txt) ?> · <?= esc($ev['actor'] ?? 'Sistema') ?><?= !empty($ev['nota']) ? ' — ' . esc($ev['nota']) : '' ?></p>
+                            <small class="tl-fecha"><?= esc($ev['created_at'] ?? '') ?></small>
+                        </div>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
         <?php endif; ?>
     <?php elseif ($seccion === 'cobros'): ?>
         <?php

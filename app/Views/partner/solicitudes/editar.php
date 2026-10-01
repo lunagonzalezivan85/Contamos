@@ -186,6 +186,7 @@ $gestorSel = (string) old('asignado_a', $s['asignado_a'] ?? '');
 
 <?= $this->section('scripts') ?>
 <script src="<?= v_asset('js/plan-sugerido.js') ?>"></script>
+<script src="<?= v_asset('js/buscador-select.js') ?>"></script>
 <script src="<?= v_asset('js/solicitud-editar.js') ?>"></script>
 <?= $this->endSection() ?>
 

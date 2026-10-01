@@ -8,6 +8,13 @@ $menus  = menu_items();
 $nombre = session('nombre') ?? 'Usuario';
 $tenant = session('tenant_name') ?? 'Contamos';
 $tSlug  = (string) session('tenant_slug');
+// Marca el item del menú que corresponde a la URL actual
+$uriActual = uri_string();
+$esActivo  = static function (?string $url) use ($uriActual): bool {
+    $u = trim((string) $url, '/');
+    if ($u === '') return $uriActual === '';
+    return $uriActual === $u || str_starts_with($uriActual, $u . '/');
+};
 // Valoración del sistema — modal cada 5 días desde la última calificación
 $valoracionPendiente = (new \App\Services\Partner\ValoracionService())
     ->pendiente((int) session('tenant_id'), (int) session('user_id'));
@@ -33,22 +40,25 @@ $valoracionPendiente = (new \App\Services\Partner\ValoracionService())
     <nav class="sidebar-nav">
         <?php foreach ($menus as $item): ?>
             <div class="nav-item">
-                <?php if (!empty($item['children'])): ?>
-                    <button type="button" class="nav-link nav-toggle" data-target="nav-<?= esc(md5($item['nombre'])) ?>">
+                <?php if (!empty($item['children'])):
+                    $grupoOn = false;
+                    foreach ($item['children'] as $c) { if ($esActivo($c['url'] ?? null)) { $grupoOn = true; break; } }
+                ?>
+                    <button type="button" class="nav-link nav-toggle<?= $grupoOn ? ' grupo-activo' : '' ?>" data-target="nav-<?= esc(md5($item['nombre'])) ?>">
                         <span class="nav-icon"><?= icon($item['icono'] ?? 'menu') ?></span>
                         <span class="nav-text"><?= esc($item['nombre']) ?></span>
                         <span class="chevron"><?= icon('chevron-down', 14) ?></span>
                     </button>
                     <div class="nav-children" id="nav-<?= esc(md5($item['nombre'])) ?>">
                         <?php foreach ($item['children'] as $child): ?>
-                            <a class="nav-link" href="<?= base_url(ltrim($child['url'] ?? '#', '/')) ?>">
+                            <a class="nav-link<?= $esActivo($child['url'] ?? null) ? ' active' : '' ?>" href="<?= base_url(ltrim($child['url'] ?? '#', '/')) ?>">
                                 <span class="nav-icon"><?= icon($child['icono'] ?? 'menu', 16) ?></span>
                                 <span class="nav-text"><?= esc($child['nombre']) ?></span>
                             </a>
                         <?php endforeach; ?>
                     </div>
                 <?php else: ?>
-                    <a class="nav-link" href="<?= base_url(ltrim($item['url'] ?? '#', '/')) ?>">
+                    <a class="nav-link<?= $esActivo($item['url'] ?? null) ? ' active' : '' ?>" href="<?= base_url(ltrim($item['url'] ?? '#', '/')) ?>">
                         <span class="nav-icon"><?= icon($item['icono'] ?? 'menu') ?></span>
                         <span class="nav-text"><?= esc($item['nombre']) ?></span>
                     </a>
@@ -94,10 +104,10 @@ $valoracionPendiente = (new \App\Services\Partner\ValoracionService())
         <button type="button" class="topbar-menu" id="sidebar-toggle" aria-label="Abrir menú">
             <?= icon('menu', 20) ?>
         </button>
-        <h2><?= esc($title ?? 'Contamos') ?></h2>
+        <h2><?= esc(preg_replace('/\s*—\s*Contamos\s*$/', '', $title ?? 'Contamos')) ?></h2>
         <div class="topbar-actions">
             <button type="button" class="palette-trigger" id="palette-trigger" title="Acciones rápidas (Ctrl+K)">
-                <span class="palette-trigger-icon">⌕</span> Buscar… <kbd>Ctrl K</kbd>
+                <span class="palette-trigger-icon">⌕</span><span class="pt-txt">Buscar…</span> <kbd>Ctrl K</kbd>
             </button>
             <button type="button" class="notif-bell" id="notif-bell" title="Notificaciones">
                 <?= icon('bell', 20) ?>

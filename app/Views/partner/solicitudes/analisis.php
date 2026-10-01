@@ -9,6 +9,7 @@ $badgeCls = 'badge sol-badge-' . strtolower($s['estado']);
 $sect     = [
     'negocio'     => ['titulo' => 'Negocio / Actividad',        'icono' => 'briefcase'],
     'ingreso'     => ['titulo' => 'Ingresos declarados',         'icono' => 'trending-up'],
+    'egreso'      => ['titulo' => 'Egresos declarados',          'icono' => 'trending-down'],
     'activo'      => ['titulo' => 'Activos',                     'icono' => 'archive'],
     'pasivo'      => ['titulo' => 'Pasivos / Deudas',            'icono' => 'trending-down'],
     'referencia'  => ['titulo' => 'Referencias personales',      'icono' => 'users'],
@@ -54,12 +55,14 @@ $sect     = [
             </div>
             <div class="detail-grid mt-3">
                 <div><label>Ingresos declarados /mes</label><p><strong><?= esc($mon) ?> <?= number_format($m['ingresos'], 2) ?></strong></p></div>
+                <div><label>Egresos declarados /mes</label><p><?= esc($mon) ?> <?= number_format($m['egresos'] ?? 0, 2) ?></p></div>
+                <div><label>Ingreso neto /mes</label><p><strong><?= esc($mon) ?> <?= number_format($m['neto'] ?? $m['ingresos'], 2) ?></strong></p></div>
                 <div><label>Cuota estimada /período</label><p><?= esc($mon) ?> <?= number_format($m['cuota'], 2) ?></p></div>
                 <div><label>Cuota equivalente /mes</label><p><strong><?= esc($mon) ?> <?= number_format($m['cuota_mes'], 2) ?></strong></p></div>
                 <div><label>% del ingreso comprometido</label><p><?= $m['ratio'] !== null ? number_format($m['ratio'] * 100, 1) . '%' : '—' ?></p></div>
             </div>
             <?php if ($m['ratio'] === null): ?>
-                <p class="ana-empty">Sin ingresos declarados — no se puede evaluar la capacidad de pago.</p>
+                <p class="ana-empty">Sin ingreso neto declarado (o los egresos superan a los ingresos) — no se puede evaluar la capacidad de pago.</p>
             <?php elseif ($m['ratio'] <= 0.30): ?>
                 <p class="ana-msg ok"><?= icon('check', 14) ?> La cuota compromete menos del 30% de sus ingresos — capacidad cómoda.</p>
             <?php elseif ($m['ratio'] <= 0.50): ?>
@@ -119,6 +122,9 @@ $sect     = [
                                     <span class="ana-muted">Venta prom./día: <?= esc($mon) ?> <?= number_format((float) ($r['promedio_venta_dia'] ?? 0), 2) ?> · <?= (int) ($r['dias_venta'] ?? 0) ?> días/sem</span>
                                 <?php elseif ($tipo === 'ingreso'): ?>
                                     <strong><?= esc($r['fuente'] ?? '—') ?></strong>
+                                    <span><?= esc($mon) ?> <?= number_format((float) ($r['monto'] ?? 0), 2) ?>/mes</span>
+                                <?php elseif ($tipo === 'egreso'): ?>
+                                    <strong><?= esc($r['descripcion'] ?? '—') ?></strong>
                                     <span><?= esc($mon) ?> <?= number_format((float) ($r['monto'] ?? 0), 2) ?>/mes</span>
                                 <?php elseif ($tipo === 'activo'): ?>
                                     <strong><?= esc($r['descripcion'] ?? '—') ?></strong>

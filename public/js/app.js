@@ -41,6 +41,17 @@
         });
     }
 
+    /* ---------- Paneles colapsables genéricos (data-collapse="id") ---------- */
+    document.querySelectorAll('[data-collapse]').forEach(function (btn) {
+        var target = document.getElementById(btn.dataset.collapse);
+        if (!target) return;
+        btn.addEventListener('click', function () {
+            var oculto = target.classList.toggle('collapsed');
+            btn.classList.toggle('collapsed', oculto);
+            btn.setAttribute('aria-expanded', String(!oculto));
+        });
+    });
+
     /* ---------- Paleta de comandos ---------- */
     var overlay = document.getElementById('palette');
     var input   = document.getElementById('palette-input');
@@ -444,6 +455,23 @@
             tplContent.value = tplEditor.innerHTML;
         });
     }
+
+    /* ---------- Anti doble-submit global ----------
+       Una vez enviado un form queda bloqueado (solicitudes, cobros,
+       aprobaciones no se duplican por doble-clic o Enter repetido).
+       - Respeta validaciones: si otro handler hizo preventDefault, no bloquea.
+       - Opt-out por form: data-no-lock.
+       - Sin disabled en el botón: excluiría su name=value del POST; el flag
+         ya bloquea re-submits y .enviando da el feedback visual. */
+    document.addEventListener('submit', function (e) {
+        var form = e.target.closest('form');
+        if (!form || e.defaultPrevented || form.dataset.noLock !== undefined) return;
+        if (form.dataset.enviado === '1') { e.preventDefault(); return; }
+        form.dataset.enviado = '1';
+        form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (b) {
+            b.classList.add('enviando');
+        });
+    });
 
     /* ---------- Pestañas (detalle de persona) ---------- */
     var personaTabs = document.getElementById('persona-tabs');

@@ -78,10 +78,11 @@ class ConnectController extends BaseController
             'ok'     => true,
             'token'  => $this->portal->tokenApp((int) $emp['id'], (int) $tenant['id']),
             'gestor' => [
-                'id'     => (int) $emp['id'],
-                'carnet' => $emp['carnet'],
-                'cargo'  => $emp['cargo'] ?? '',
-                'nombre' => $persona['nombre'] ?? $emp['carnet'],
+                'id'             => (int) $emp['id'],
+                'carnet'         => $emp['carnet'],
+                'cargo'          => $emp['cargo'] ?? '',
+                'nombre'         => $persona['nombre'] ?? $emp['carnet'],
+                'puede_entregar' => !empty($emp['puede_desembolsar']),
             ],
             'tenant' => [
                 'slug'   => $slug,
@@ -154,6 +155,159 @@ class ConnectController extends BaseController
                 ->setJSON(['ok' => false, 'error' => 'Cliente no está en tu cartera.']);
         }
         return $this->response->setJSON(['ok' => true] + $ficha);
+    }
+
+    /** POST /{slug}/connect/cliente/{id}/documento — sube un doc al expediente (multipart). */
+    public function subirDocumento(string $slug, int $id)
+    {
+        $this->cors();
+        [$tenant, $empId] = $this->auth($slug);
+        if (!$empId) return $this->response->setStatusCode(401)->setJSON(['ok' => false]);
+
+        // Solo clientes de la cartera del gestor
+        $ficha = $this->portal->fichaCliente((int) $tenant['id'], $empId, $id);
+        if (!$ficha) {
+            return $this->response->setStatusCode(404)
+                ->setJSON(['ok' => false, 'error' => 'Cliente no está en tu cartera.']);
+        }
+
+        $file = $this->request->getFile('archivo');
+        if (!$file || !$file->isValid()) {
+            return $this->response->setStatusCode(422)
+                ->setJSON(['ok' => false, 'error' => 'Adjuntá el archivo del documento (foto o PDF).']);
+        }
+
+        $r = (new \App\Services\Partner\PersonaService())->agregarDato(
+            (int) $ficha['persona']['id'], 'documento',
+            [
+                'tipo'        => (string) $this->request->getPost('tipo'),
+                'descripcion' => (string) $this->request->getPost('descripcion'),
+            ],
+            $file
+        );
+
+        return $r['ok']
+            ? $this->response->setJSON(['ok' => true])
+            : $this->response->setStatusCode(422)->setJSON(['ok' => false, 'error' => $r['error']]);
+    }
+
+    /** POST /{slug}/connect/cliente/{id}/datos — datos básicos de la persona (app). */
+    public function datosCliente(string $slug, int $id)
+    {
+        $this->cors();
+        $ficha = $this->fichaApp($slug, $id);
+        if (isset($ficha['resp'])) return $ficha['resp'];
+
+        $this->portal->actualizarDatosCliente($ficha['cliente'], $this->datos());
+        return $this->response->setJSON(['ok' => true]);
+    }
+
+    /** POST /{slug}/connect/cliente/{id}/dato/{tipo} — item del expediente (dir, contacto, ...). */
+    public function agregarDatoCliente(string $slug, int $id, string $tipo)
+    {
+        $this->cors();
+        $ficha = $this->fichaApp($slug, $id);
+        if (isset($ficha['resp'])) return $ficha['resp'];
+
+        $r = $this->portal->agregarDato(
+            (int) $ficha['persona']['id'], $tipo, $this->datos(),
+            $this->request->getFile('archivo')
+        );
+        return $r['ok']
+            ? $this->response->setJSON(['ok' => true])
+            : $this->response->setStatusCode(422)->setJSON(['ok' => false, 'error' => $r['error']]);
+    }
+
+    /** POST /{slug}/connect/cliente/{id}/dato/{tipo}/{item}/eliminar — borra item del expediente. */
+    public function eliminarDatoCliente(string $slug, int $id, string $tipo, int $item)
+    {
+        $this->cors();
+        $ficha = $this->fichaApp($slug, $id);
+        if (isset($ficha['resp'])) return $ficha['resp'];
+
+        $r = $this->portal->eliminarDato((int) $ficha['persona']['id'], $tipo, $item);
+        return $r['ok']
+            ? $this->response->setJSON(['ok' => true])
+            : $this->response->setStatusCode(422)->setJSON(['ok' => false, 'error' => $r['error']]);
+    }
+
+    /** GET /{slug}/connect/cliente/{id}/analisis — métricas + nivel guardado (última solicitud). */
+    public function analisisCliente(string $slug, int $id)
+    {
+        $this->cors();
+        $ficha = $this->fichaApp($slug, $id);
+        if (isset($ficha['resp'])) return $ficha['resp'];
+
+        $tid = (int) $ficha['tenant_id_analisis'];
+        $sol = $this->solParaAnalisis($ficha);
+        $svc = new SolicitudService();
+        $sec = $svc->seccionesCliente((int) $ficha['persona']['id']);
+        $m   = $svc->metricasAnalisis(
+            $sol ?: ['monto' => 0, 'frecuencia' => 'M', 'plazo_meses' => 1], $sec);
+        if (!$sol) $m['ratio'] = null;   // sin solicitud no hay cuota que comparar
+
+        [$items, $faltan] = $svc->checklistCliente(
+            $sol ?: ['persona_id' => (int) $ficha['persona']['id']] + $ficha['persona']);
+
+        return $this->response->setJSON([
+            'ok'           => true,
+            'solicitud'    => $sol ? ['id' => (int) $sol['id'], 'monto' => (float) $sol['monto'],
+                'frecuencia' => $sol['frecuencia'] ?? 'M', 'estado' => $sol['estado'] ?? ''] : null,
+            'metricas'     => $m,
+            'analisis'     => $sol ? $svc->analisisDe($tid, (int) $sol['id']) : null,
+            'nivelLbl'     => \App\Models\SolicitudAnalisisModel::NIVELES,
+            'checklist'    => $items,
+            'faltan'       => $faltan,
+        ]);
+    }
+
+    /** POST /{slug}/connect/cliente/{id}/analisis — calcula y persiste el análisis. */
+    public function calcularAnalisisCliente(string $slug, int $id)
+    {
+        $this->cors();
+        $ficha = $this->fichaApp($slug, $id);
+        if (isset($ficha['resp'])) return $ficha['resp'];
+
+        $sol = $this->solParaAnalisis($ficha);
+        if (!$sol) {
+            return $this->response->setStatusCode(422)
+                ->setJSON(['ok' => false, 'error' => 'El cliente aún no tiene solicitudes — creá una para calcular el análisis.']);
+        }
+
+        $r = (new SolicitudService())->calcularAnalisis((int) $ficha['tenant_id_analisis'], $sol);
+        // $r ya valida el checklist del expediente
+        if (!$r['ok']) {
+            return $this->response->setStatusCode(422)->setJSON(['ok' => false, 'error' => $r['error']]);
+        }
+        return $this->analisisCliente($slug, $id);
+    }
+
+    /** Ficha validada (cartera del gestor) o ['resp' => Response] listo para devolver. */
+    private function fichaApp(string $slug, int $id): array
+    {
+        [$tenant, $empId] = $this->auth($slug);
+        if (!$empId) {
+            return ['resp' => $this->response->setStatusCode(401)->setJSON(['ok' => false])];
+        }
+        $ficha = $this->portal->fichaCliente((int) $tenant['id'], $empId, $id);
+        if (!$ficha) {
+            return ['resp' => $this->response->setStatusCode(404)
+                ->setJSON(['ok' => false, 'error' => 'Cliente no está en tu cartera.'])];
+        }
+        return $ficha + ['tenant_id_analisis' => (int) $tenant['id']];
+    }
+
+    /** Última solicitud del cliente (la más reciente) lista para métricas/checklist. */
+    private function solParaAnalisis(array $ficha): ?array
+    {
+        $sol = $ficha['solicitudes'][0] ?? null;   // fichaCliente las ordena por id DESC
+        if (!$sol) return null;
+        // checklistCliente necesita persona_id + contacto de la persona
+        return $sol + [
+            'persona_id' => (int) $ficha['persona']['id'],
+            'cedula'     => $ficha['persona']['cedula'] ?? '',
+            'telefono'   => $ficha['persona']['telefono'] ?? '',
+        ];
     }
 
     /** GET /{slug}/connect/cobros — créditos con cuotas por cobrar + resumen del día. */
@@ -229,9 +383,12 @@ class ConnectController extends BaseController
         [$tenant, $empId] = $this->auth($slug);
         if (!$empId) return $this->response->setStatusCode(401)->setJSON(['ok' => false]);
 
+        $emp = $this->portal->empleadoDeId($empId);
+
         return $this->response->setJSON([
             'ok' => true,
-            'solicitudes' => $this->portal->desembolsosPendientes((int) $tenant['id'], $empId)['solicitudes'],
+            'solicitudes'     => $this->portal->desembolsosPendientes((int) $tenant['id'], $empId)['solicitudes'],
+            'puede_entregar'  => !empty($emp['puede_desembolsar']),
         ]);
     }
 
@@ -266,6 +423,37 @@ class ConnectController extends BaseController
         return $this->response->setJSON(['ok' => true]);
     }
 
+    /** GET /{slug}/connect/solicitud/{id} — datos de la solicitud del gestor (para editar en la app). */
+    public function verSolicitud(string $slug, int $id)
+    {
+        $this->cors();
+        [$tenant, $empId] = $this->auth($slug);
+        if (!$empId) return $this->response->setStatusCode(401)->setJSON(['ok' => false]);
+
+        $sol = $this->portal->solicitudDeGestor((int) $tenant['id'], $empId, $id);
+        if (!$sol) return $this->response->setStatusCode(404)->setJSON(['ok' => false, 'error' => 'No encontrada en tu cartera']);
+
+        $sol['editable'] = in_array($sol['estado'], ['CREADA', 'REVISION'], true);
+        return $this->response->setJSON(['ok' => true, 'solicitud' => $sol]);
+    }
+
+    /** POST /{slug}/connect/solicitud/{id} — el gestor corrige su solicitud (CREADA|REVISION). */
+    public function editarSolicitud(string $slug, int $id)
+    {
+        $this->cors();
+        [$tenant, $empId] = $this->auth($slug);
+        if (!$empId) return $this->response->setStatusCode(401)->setJSON(['ok' => false]);
+
+        $empleado = $this->portal->empleadoDeId($empId);
+        if (!$empleado) return $this->response->setStatusCode(401)->setJSON(['ok' => false]);
+
+        $r = $this->portal->actualizarSolicitudGestor($tenant, $empleado, $id, $this->datos());
+        if (!$r['ok']) {
+            return $this->response->setStatusCode(422)->setJSON(['ok' => false, 'error' => $r['error']]);
+        }
+        return $this->response->setJSON(['ok' => true]);
+    }
+
     /** GET /{slug}/connect/actividad — solicitudes creadas por el gestor. */
     public function actividad(string $slug)
     {
@@ -273,9 +461,15 @@ class ConnectController extends BaseController
         [$tenant, $empId] = $this->auth($slug);
         if (!$empId) return $this->response->setStatusCode(401)->setJSON(['ok' => false]);
 
+        $lista = $this->portal->actividadGestor((int) $tenant['id'], $empId)['solicitudes'];
+        foreach ($lista as &$s) {
+            $s['editable'] = in_array($s['estado'], ['CREADA', 'REVISION'], true);
+        }
+        unset($s);
+
         return $this->response->setJSON([
             'ok' => true,
-            'solicitudes' => $this->portal->actividadGestor((int) $tenant['id'], $empId)['solicitudes'],
+            'solicitudes' => $lista,
         ]);
     }
 

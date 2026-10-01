@@ -6,6 +6,7 @@ use App\Models\ClienteModel;
 use App\Models\EmpleadoModel;
 use App\Models\PersonaDetalleModel;
 use App\Models\SolicitudAnalisisModel;
+use App\Models\SolicitudHistorialModel;
 use App\Models\SolicitudModel;
 use App\Models\TenantModel;
 
@@ -19,15 +20,17 @@ class SolicitudService
 
     public const LBL_FREQ = ['D' => 'Diario', 'DI' => 'Diario intermitente', 'S' => 'Semanal', 'Q' => 'Quincenal', 'M' => 'Mensual', 'P' => 'Personalizado'];
 
-    private SolicitudModel         $solicitudes;
-    private SolicitudAnalisisModel $analisis;
-    private EmpleadoModel          $empleados;
-    private TenantModel            $tenants;
+    private SolicitudModel           $solicitudes;
+    private SolicitudAnalisisModel   $analisis;
+    private SolicitudHistorialModel  $historial;
+    private EmpleadoModel            $empleados;
+    private TenantModel              $tenants;
 
     public function __construct()
     {
         $this->solicitudes = new SolicitudModel();
         $this->analisis    = new SolicitudAnalisisModel();
+        $this->historial   = new SolicitudHistorialModel();
         $this->empleados   = new EmpleadoModel();
         $this->tenants     = new TenantModel();
     }
@@ -163,6 +166,19 @@ class SolicitudService
         $fechaPp = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($d['fecha_primer_pago'] ?? ''))
             ? (string) $d['fecha_primer_pago'] : null;
 
+        // Anti-duplicado server-side: mismo cliente + mismo monto en los
+        // últimos 5 min = reenvío del form (doble-clic / retry). Devolvemos
+        // la solicitud ya creada en vez de insertar otra.
+        $dup = $this->solicitudes->where('tenant_id', $tenantId)
+            ->where('cliente_id', (int) $cli['id'])
+            ->where('monto', $monto)
+            ->whereNotIn('estado', [SolicitudModel::RECHAZADA, SolicitudModel::LIQUIDADO])
+            ->where('created_at >=', date('Y-m-d H:i:s', time() - 300))
+            ->orderBy('id', 'DESC')->first();
+        if ($dup) {
+            return ['ok' => true, 'id' => (int) $dup['id'], 'duplicada' => true];
+        }
+
         $freq = (string) ($d['frecuencia'] ?? 'M');
         $id   = (int) $this->solicitudes->insert([
             'tenant_id'         => $tenantId,
@@ -180,9 +196,12 @@ class SolicitudService
             'estado'            => SolicitudModel::CREADA,
         ]);
 
-        return $id > 0
-            ? ['ok' => true, 'id' => $id]
-            : ['ok' => false, 'error' => 'No se pudo guardar la solicitud.'];
+        if ($id > 0) {
+            $this->historial->registrar($tenantId, $id, SolicitudHistorialModel::CREADO,
+                SolicitudModel::CREADA, null, $this->actorOficina());
+            return ['ok' => true, 'id' => $id];
+        }
+        return ['ok' => false, 'error' => 'No se pudo guardar la solicitud.'];
     }
 
     /** Detalles del expediente del cliente, agrupados por tipo de detalle. */
@@ -190,7 +209,11 @@ class SolicitudService
     {
         $secciones = [];
         foreach ((new PersonaDetalleModel())->tipos() as $tipo) {
-            $secciones[$tipo] = $personaId ? (new PersonaDetalleModel($tipo))->dePersona($personaId) : [];
+            try {
+                $secciones[$tipo] = $personaId ? (new PersonaDetalleModel($tipo))->dePersona($personaId) : [];
+            } catch (\Throwable $e) {
+                $secciones[$tipo] = [];   // tabla hija sin migrar en el server
+            }
         }
         return $secciones;
     }
@@ -239,6 +262,8 @@ class SolicitudService
         $sum      = static fn (array $rows, string $col): float =>
             array_sum(array_map(static fn ($r) => (float) ($r[$col] ?? 0), $rows));
         $ingresos = $sum($secciones['ingreso'] ?? [], 'monto');
+        $egresos  = $sum($secciones['egreso']  ?? [], 'monto');   // gastos mensuales
+        $neto     = $ingresos - $egresos;                          // ingreso disponible
         $activos  = $sum($secciones['activo']  ?? [], 'valor');
         $pasivos  = $sum($secciones['pasivo']  ?? [], 'monto');
         $cuotaMes = $cuota * $pagosXmes;   // lo que pagaría al mes
@@ -248,10 +273,12 @@ class SolicitudService
             'cuota_mes'  => $cuotaMes,
             'pagos'      => $n,
             'ingresos'   => $ingresos,
+            'egresos'    => $egresos,
+            'neto'       => $neto,
             'activos'    => $activos,
             'pasivos'    => $pasivos,
             'patrimonio' => $activos - $pasivos,
-            'ratio'      => $ingresos > 0 ? $cuotaMes / $ingresos : null,   // % del ingreso comprometido
+            'ratio'      => $neto > 0 ? $cuotaMes / $neto : null,   // % del ingreso neto comprometido
         ];
     }
 
@@ -455,9 +482,23 @@ class SolicitudService
         return ['ok' => true];
     }
 
-    public function moverEstado(int $id, string $nuevo): void
+    /**
+     * Mueve la solicitud de estado + timeline.
+     * $nota = observación al mandar a REVISION — queda en `nota_revision`
+     * para que el gestor la vea (portal + app) y en el historial para siempre.
+     */
+    public function moverEstado(array $sol, string $nuevo, ?string $nota = null): void
     {
-        $this->solicitudes->update($id, ['estado' => $nuevo]);
+        $set = ['estado' => $nuevo];
+        if ($nuevo === SolicitudModel::REVISION) {
+            $set['nota_revision'] = ($nota !== null && $nota !== '') ? $nota : null;
+        } elseif (($sol['estado'] ?? '') === SolicitudModel::REVISION) {
+            $set['nota_revision'] = null;   // salió de revisión — la nota vive en el historial
+        }
+        $this->solicitudes->update((int) $sol['id'], $set);
+
+        $this->historial->registrar((int) $sol['tenant_id'], (int) $sol['id'],
+            SolicitudHistorialModel::ESTADO, $nuevo, $nota, $this->actorOficina());
     }
 
     /**
@@ -528,16 +569,21 @@ class SolicitudService
             'estado'              => SolicitudModel::APROBADA,
         ]);
 
+        $this->historial->registrar($tenantId, (int) $sol['id'],
+            SolicitudHistorialModel::ESTADO, SolicitudModel::APROBADA, null, $this->actorOficina());
+
         return ['ok' => true];
     }
 
     /** Programa la fecha de desembolso y pasa a DESEMBOLSO. */
-    public function guardarDesembolso(int $id, string $fecha): void
+    public function guardarDesembolso(array $sol, string $fecha): void
     {
-        $this->solicitudes->update($id, [
+        $this->solicitudes->update((int) $sol['id'], [
             'fecha_desembolso' => $fecha,
             'estado'           => SolicitudModel::DESEMBOLSO,
         ]);
+        $this->historial->registrar((int) $sol['tenant_id'], (int) $sol['id'],
+            SolicitudHistorialModel::ESTADO, SolicitudModel::DESEMBOLSO, null, $this->actorOficina());
     }
 
     /**
@@ -625,6 +671,24 @@ class SolicitudService
             'fecha_primer_pago' => $fechaPp,
         ]);
 
+        $this->historial->registrar($tenantId, (int) $sol['id'],
+            SolicitudHistorialModel::EDITADO, null, null, $this->actorOficina());
+
         return ['ok' => true];
+    }
+
+    /** Timeline de la solicitud (modal "Historial" en el detalle). */
+    public function historialDe(int $tenantId, int $solId): array
+    {
+        return $this->historial->deSolicitud($tenantId, $solId);
+    }
+
+    /** Actor de sesión de oficina para el historial ([] si no hay usuario). */
+    private function actorOficina(): array
+    {
+        $uid = (int) session('user_id');
+        return $uid > 0
+            ? ['user_id' => $uid, 'nombre' => session('nombre') ?: session('username')]
+            : [];
     }
 }

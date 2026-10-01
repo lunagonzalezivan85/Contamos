@@ -48,7 +48,11 @@ class Menu extends BaseConfig
         [
             'nombre' => 'Auditoría',
             'icono'  => 'activity',
-            'url'    => '/admin/auditoria',
+            'url'    => null,
+            'children' => [
+                ['nombre' => 'Bitácora',        'icono' => 'activity',   'url' => '/admin/auditoria'],
+                ['nombre' => 'Logs de errores', 'icono' => 'alert-triangle', 'url' => '/admin/auditoria/errores'],
+            ],
         ],
         [
             'nombre' => 'Configuración',

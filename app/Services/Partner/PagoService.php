@@ -4,6 +4,7 @@ namespace App\Services\Partner;
 
 use App\Models\CuotaModel;
 use App\Models\PagoModel;
+use App\Models\SolicitudHistorialModel;
 use App\Models\SolicitudModel;
 use App\Models\TenantModel;
 use Config\Database;
@@ -451,6 +452,14 @@ class PagoService
             'estado'        => SolicitudModel::CREADA,
         ]);
 
+        if ($nuevo) {
+            (new SolicitudHistorialModel())->registrar($tenantId, (int) $nuevo,
+                SolicitudHistorialModel::CREADO, SolicitudModel::CREADA,
+                'Refinanciamiento del crédito #' . $solId,
+                ['user_id' => (int) session('user_id') ?: null,
+                 'nombre'  => session('nombre') ?: 'Oficina']);
+        }
+
         return $nuevo
             ? ['ok' => true, 'sol_id' => (int) $nuevo]
             : ['ok' => false, 'error' => 'No se pudo crear la solicitud de refinanciamiento.'];
@@ -533,6 +542,27 @@ class PagoService
         }
 
         $esPromesa = ($d['tipo'] ?? '') === PagoModel::TIPO_PROMESA;
+
+        // Anti-duplicado server-side: mismo abono (solicitud + monto + tipo +
+        // quién lo cobró) en los últimos 2 min = reenvío del form
+        // (doble-tap / retry). Devolvemos el pago ya registrado.
+        $dupQ = $this->pagos->where('tenant_id', $tenantId)
+            ->where('solicitud_id', $solId)
+            ->where('monto', $monto)
+            ->where('tipo', $esPromesa ? PagoModel::TIPO_PROMESA : PagoModel::TIPO_PAGO)
+            ->whereIn('estado', [PagoModel::REVISION, PagoModel::APLICADO])
+            ->where('created_at >=', date('Y-m-d H:i:s', time() - 120));
+        $empleadoId === null
+            ? $dupQ->where('empleado_id IS NULL') : $dupQ->where('empleado_id', $empleadoId);
+        $userId === null
+            ? $dupQ->where('registrado_por IS NULL') : $dupQ->where('registrado_por', $userId);
+        if ($cuotaId) {
+            $dupQ->where('cuota_id', $cuotaId);
+        }
+        $dup = $dupQ->first();
+        if ($dup) {
+            return ['ok' => true, 'pago_id' => (int) $dup['id']];
+        }
 
         $pagoId = $this->pagos->insert([
             'tenant_id'      => $tenantId,

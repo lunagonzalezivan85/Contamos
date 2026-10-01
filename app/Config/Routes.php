@@ -8,6 +8,9 @@ use CodeIgniter\Router\RouteCollection;
 // Públicas — Shared
 // ---------------------------------------------------------------------------
 $routes->get('/', 'Shared\LandingController::index');
+$routes->get('descargar', 'Shared\LandingController::descargar');                // página de descarga de la app
+$routes->get('descargar/apk', 'Shared\LandingController::apk');                  // última versión del APK
+$routes->get('descargar/apk/(:segment)', 'Shared\LandingController::apk/$1');    // versión puntual
 $routes->post('solicitar-acceso', 'Shared\LandingController::solicitarAcceso');
 
 // Autenticación
@@ -41,6 +44,12 @@ $routes->get('(:segment)/connect/notificaciones', 'Partner\ConnectController::no
 $routes->get('(:segment)/connect/home',        'Partner\ConnectController::home/$1');           // resumen del día
 $routes->get('(:segment)/connect/cartera',     'Partner\ConnectController::cartera/$1');        // clientes del gestor
 $routes->get('(:segment)/connect/cliente/(:num)', 'Partner\ConnectController::cliente/$1/$2');  // ficha del cliente
+$routes->post('(:segment)/connect/cliente/(:num)/documento', 'Partner\ConnectController::subirDocumento/$1/$2'); // expediente
+$routes->post('(:segment)/connect/cliente/(:num)/datos',     'Partner\ConnectController::datosCliente/$1/$2');   // persona básica
+$routes->post('(:segment)/connect/cliente/(:num)/dato/(:segment)', 'Partner\ConnectController::agregarDatoCliente/$1/$2/$3'); // dirección, contacto, negocio...
+$routes->post('(:segment)/connect/cliente/(:num)/dato/(:segment)/(:num)/eliminar', 'Partner\ConnectController::eliminarDatoCliente/$1/$2/$3/$4');
+$routes->get('(:segment)/connect/cliente/(:num)/analisis',   'Partner\ConnectController::analisisCliente/$1/$2'); // métricas + nivel
+$routes->post('(:segment)/connect/cliente/(:num)/analisis',  'Partner\ConnectController::calcularAnalisisCliente/$1/$2');
 $routes->get('(:segment)/connect/cobros',      'Partner\ConnectController::cobros/$1');         // cuotas por cobrar
 $routes->post('(:segment)/connect/cobros/(:num)/abonar', 'Partner\ConnectController::abonarCobro/$1/$2'); // cobro en campo
 $routes->get('(:segment)/connect/cobros/(:num)/recibo',  'Partner\ConnectController::reciboCobro/$1/$2'); // voucher
@@ -48,6 +57,8 @@ $routes->get('(:segment)/connect/ruta',        'Partner\ConnectController::ruta/
 $routes->get('(:segment)/connect/desembolsos', 'Partner\ConnectController::desembolsos/$1');    // por entregar
 $routes->post('(:segment)/connect/desembolsos/(:num)/entregar', 'Partner\ConnectController::entregarDesembolso/$1/$2');
 $routes->post('(:segment)/connect/solicitud',  'Partner\ConnectController::crearSolicitud/$1'); // nueva solicitud
+$routes->get('(:segment)/connect/solicitud/(:num)',  'Partner\ConnectController::verSolicitud/$1/$2');    // detalle para editar
+$routes->post('(:segment)/connect/solicitud/(:num)', 'Partner\ConnectController::editarSolicitud/$1/$2'); // solo CREADA|REVISION
 $routes->get('(:segment)/connect/actividad',   'Partner\ConnectController::actividad/$1');      // solicitudes del gestor
 $routes->get('(:segment)/connect/arqueo',      'Partner\ConnectController::arqueo/$1');         // "Mi caja"
 $routes->get('(:segment)/connect/simulador',   'Partner\ConnectController::simulador/$1');      // plan de cuotas
@@ -55,6 +66,8 @@ $routes->get('(:segment)/portal/solicitar',    'Partner\PortalController::solici
 $routes->post('(:segment)/portal/solicitar',   'Partner\PortalController::guardarSolicitar/$1');
 $routes->get('(:segment)/portal/solicitud',    'Partner\PortalController::solicitud/$1');
 $routes->post('(:segment)/portal/solicitud',   'Partner\PortalController::guardarSolicitud/$1');
+$routes->get('(:segment)/portal/solicitud/(:num)/editar',  'Partner\PortalController::editarSolicitud/$1/$2');   // solo CREADA|REVISION
+$routes->post('(:segment)/portal/solicitud/(:num)/editar', 'Partner\PortalController::guardarEdicionSolicitud/$1/$2');
 $routes->get('(:segment)/portal/desembolso',   'Partner\PortalController::desembolso/$1');   // desembolsos de su cartera
 $routes->post('(:segment)/portal/desembolso/(:num)/entregar', 'Partner\PortalController::entregarDesembolso/$1/$2');
 $routes->get('(:segment)/portal/recuperacion', 'Partner\PortalController::recuperacion/$1');
@@ -99,6 +112,8 @@ $routes->post('tenants/(:num)/cobrar','TenantController::cobrar/$1');
 
     // Auditoría global (audit_logs)
     $routes->get('auditoria', 'AuditoriaController::index');
+    $routes->get('auditoria/errores',        'AuditoriaController::errores');        // bitácora error_log
+    $routes->post('auditoria/errores/purgar','AuditoriaController::purgarErrores');  // borra >X días
 
     // Configuración — catálogo de planes SaaS
     $routes->get('configuracion',                  'ConfiguracionController::index');
@@ -161,6 +176,7 @@ $routes->post('credito/solicitudes', 'SolicitudController::guardar', ['filter' =
     $routes->post('credito/solicitudes/(:num)/aprobar', 'SolicitudController::guardarAprobacion/$1', ['filter' => 'auth:solicitudes.aprobar']);
     $routes->get('credito/solicitudes/(:num)/desembolsar', 'SolicitudController::desembolsar/$1', ['filter' => 'auth:solicitudes.desembolsar']);
     $routes->post('credito/solicitudes/(:num)/desembolsar', 'SolicitudController::guardarDesembolso/$1', ['filter' => 'auth:solicitudes.desembolsar']);
+    $routes->post('credito/solicitudes/(:num)/entregar', 'SolicitudController::entregarDesembolso/$1', ['filter' => 'auth:solicitudes.desembolsar']);
     $routes->get('credito/solicitudes/(:num)/editar', 'SolicitudController::editar/$1', ['filter' => 'auth:solicitudes.editar']);
     $routes->post('credito/solicitudes/(:num)/editar', 'SolicitudController::actualizar/$1', ['filter' => 'auth:solicitudes.editar']);
     $routes->post('credito/solicitudes/(:num)/estado', 'SolicitudController::cambiarEstado/$1', ['filter' => 'auth:solicitudes.ver']);

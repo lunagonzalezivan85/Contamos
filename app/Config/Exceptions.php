@@ -101,6 +101,13 @@ class Exceptions extends BaseConfig
      */
     public function handler(int $statusCode, Throwable $exception): ExceptionHandlerInterface
     {
+        // Bitácora de errores: lo que el handler muestra en pantalla queda
+        // registrado para el admin (los 404 se ignoran como en $ignoreCodes).
+        if (!in_array($statusCode, $this->ignoreCodes, true)) {
+            $uri = function_exists('service')
+                ? (string) service('request')->getUri()->getPath() : '';
+            log_error('HTTP ' . $statusCode . ' ' . $uri, $exception);
+        }
         return new ExceptionHandler($this);
     }
 }

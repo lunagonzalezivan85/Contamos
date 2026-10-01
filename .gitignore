@@ -136,3 +136,8 @@ _modules/*
 
 /results/
 /phpunit.xml
+
+# APKs compilados de la app gestor (binarios pesados, se regeneran con gradle)
+public/app/*.apk
+/tmp/
+/AndroidManifest.xml

@@ -110,6 +110,14 @@
                     <option value="INACTIVO" <?= $est === 'INACTIVO' ? 'selected' : '' ?>>Inactivo</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label for="puede_desembolsar">Permiso de caja</label>
+                <label class="chk">
+                    <?php $puede = old('puede_desembolsar', $e['puede_desembolsar'] ?? 1); ?>
+                    <input type="checkbox" id="puede_desembolsar" name="puede_desembolsar" value="1" <?= $puede ? 'checked' : '' ?>>
+                    <span>Puede entregar desembolsos (portal y app)</span>
+                </label>
+            </div>
             <div class="form-group form-full">
                 <label for="direccion">Dirección</label>
                 <input type="text" id="direccion" name="direccion"

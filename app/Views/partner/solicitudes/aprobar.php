@@ -30,6 +30,8 @@ $monedaJs = esc($mon, 'js');
             <div><label>Cédula</label><p><?= esc($s['cedula'] ?? '—') ?></p></div>
             <div><label>Teléfono</label><p><?= esc($s['telefono'] ?? '—') ?></p></div>
             <div><label>Ingresos declarados /mes</label><p><?= esc($mon) ?> <?= number_format($m['ingresos'], 2) ?></p></div>
+            <div><label>Egresos declarados /mes</label><p><?= esc($mon) ?> <?= number_format($m['egresos'] ?? 0, 2) ?></p></div>
+            <div><label>Ingreso neto /mes</label><p><strong><?= esc($mon) ?> <?= number_format($m['neto'] ?? $m['ingresos'], 2) ?></strong></p></div>
             <div><label>Nivel de capacidad</label><p>
                 <?php if (!empty($analisis['nivel'])): ?>
                     <span class="badge ana-nivel-<?= strtolower($analisis['nivel']) ?>"><?= esc($nivelLbl[$analisis['nivel']] ?? $analisis['nivel']) ?></span>

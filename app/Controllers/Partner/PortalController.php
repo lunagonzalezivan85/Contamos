@@ -209,6 +209,46 @@ class PortalController extends BaseController
             ->with('success', 'Solicitud creada y asignada a tu cartera.');
     }
 
+    /** GET /{slug}/portal/solicitud/{id}/editar - el gestor corrige su solicitud (CREADA|REVISION). */
+    public function editarSolicitud(string $slug, int $id)
+    {
+        $ctx = $this->ctx($slug);
+        if (!$ctx) return redirect()->to('/' . $slug . '/portal/login');
+        [$tenant, $empleado, $persona] = $ctx;
+
+        $sol = $this->portal->solicitudDeGestor((int) $tenant['id'], (int) $empleado['id'], $id);
+        if (!$sol) {
+            return redirect()->to('/' . $slug . '/portal/actividad')
+                ->with('error', 'Solicitud no encontrada en tu cartera.');
+        }
+        if (!in_array($sol['estado'], ['CREADA', 'REVISION'], true)) {
+            return redirect()->to('/' . $slug . '/portal/actividad')
+                ->with('error', 'La solicitud ya no se puede editar.');
+        }
+
+        return view('partner/portal/solicitud_editar', [
+            'title' => 'Editar solicitud - ' . $tenant['nombre'],
+            'tenant' => $tenant, 'slug' => $slug, 'persona' => $persona,
+            's' => $sol,
+        ]);
+    }
+
+    /** POST /{slug}/portal/solicitud/{id}/editar - guarda los cambios del gestor. */
+    public function guardarEdicionSolicitud(string $slug, int $id)
+    {
+        $ctx = $this->ctx($slug);
+        if (!$ctx) return redirect()->to('/' . $slug . '/portal/login');
+        [$tenant, $empleado] = $ctx;
+
+        $r = $this->portal->actualizarSolicitudGestor($tenant, $empleado, $id, $this->request->getPost());
+        if (!$r['ok']) {
+            return redirect()->back()->withInput()->with('error', $r['error']);
+        }
+
+        return redirect()->to('/' . $slug . '/portal/actividad')
+            ->with('success', 'Solicitud actualizada — oficina la revisará.');
+    }
+
     /** GET /{slug}/portal/perfil - perfil del gestor (datos + documentos). */
     public function perfil(string $slug)
     {
@@ -257,6 +297,7 @@ class PortalController extends BaseController
             'persona' => $persona, 'seccion' => 'desembolso',
             'solicitudes' => $data['solicitudes'], 'pager' => $data['pager'],
             'hoy'     => date('Y-m-d'),
+            'puede_entregar' => !empty($empleado['puede_desembolsar']),
         ]);
     }
 
@@ -514,10 +555,19 @@ class PortalController extends BaseController
 
         $data = $this->portal->actividadGestor((int) $tenant['id'], (int) $empleado['id']);
 
+        // El feed de historial es complementario — si falla (tabla ausente,
+        // service viejo en el server) la sección carga sin él.
+        try {
+            $eventos = $this->portal->historialGestor((int) $tenant['id'], (int) $empleado['id']);
+        } catch (\Throwable $e) {
+            $eventos = [];
+        }
+
         return view('partner/portal/seccion', [
             'title' => 'Actividad reciente - ' . $tenant['nombre'], 'tenant' => $tenant, 'slug' => $slug,
             'persona' => $persona, 'seccion' => 'actividad',
             'solicitudes' => $data['solicitudes'], 'pager' => $data['pager'],
+            'eventos' => $eventos,
         ]);
     }
 

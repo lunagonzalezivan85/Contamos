@@ -179,6 +179,7 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
 </div>
 
 <script src="<?= v_asset('js/plan-sugerido.js') ?>"></script>
+<script src="<?= v_asset('js/buscador-select.js') ?>"></script>
 <script>
 (function () {
     var form  = document.getElementById('sol-form');
@@ -193,6 +194,10 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
     var fpp   = document.getElementById('fecha_primer_pago');
     var hint  = document.getElementById('sol-limite-hint');
     var dwrap = document.getElementById('dias-wrap');
+
+    // Selects largos → paleta de búsqueda (cliente, gestor)
+    BuscarSelect.enhance(cli,   { placeholder: 'Buscar cliente por nombre o código…', vacio: '— Seleccione el cliente —' });
+    BuscarSelect.enhance(document.getElementById('asignado_a'), { placeholder: 'Buscar gestor…', vacio: '— Sin asignar —' });
 
     var LBL_F = { D: 'Diario', DI: 'Diario intermitente', S: 'Semanal', Q: 'Quincenal', M: 'Mensual' };
     var PPM   = { D: 30, S: 4, Q: 2, M: 1 };
@@ -286,7 +291,7 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
     });
 
     form.addEventListener('submit', function (e) {
-        if (!cli.value) { e.preventDefault(); alert('Seleccione un cliente.'); cli.focus(); return; }
+        if (!cli.value) { e.preventDefault(); alert('Seleccione un cliente.'); (cli._busqInput || cli).focus(); return; }
         if ((parseFloat(monto.value) || 0) < 1000) { e.preventDefault(); alert('El monto mínimo a prestar es ' + mon + ' 1,000.'); monto.focus(); }
     });
 

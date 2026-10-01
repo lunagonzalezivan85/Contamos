@@ -64,13 +64,38 @@ class ClienteService
 
     /**
      * Alta de cliente: persona + cliente con código correlativo.
+     * Anti-duplicado: si la persona ya existe (cédula o teléfono) se
+     * reutiliza su ficha — un doble-submit no crea persona+cliente dobles.
      * @return array{cliente_id: int, codigo: string}
      */
     public function registrar(int $tenantId, string $tenantNombre, array $d): array
     {
-        $codigo    = $this->clientes->siguienteCodigo($tenantId, $tenantNombre);
-        $personaId = $this->personaSvc->crear($tenantId, self::TIPO, $d);
+        $cedula   = trim((string) ($d['cedula'] ?? ''));
+        $telefono = trim((string) ($d['telefono'] ?? ''));
 
+        $persona = null;
+        if ($cedula !== '') {
+            $persona = $this->personas->where('tenant_id', $tenantId)
+                ->where('tipo', self::TIPO)->where('cedula', $cedula)->first();
+        }
+        if (!$persona && $telefono !== '') {
+            $persona = $this->personas->where('tenant_id', $tenantId)
+                ->where('tipo', self::TIPO)->where('telefono', $telefono)->first();
+        }
+
+        if ($persona) {
+            // Ya tiene ficha de cliente → devolverla tal cual (idempotente)
+            $existe = $this->clientes->where('tenant_id', $tenantId)
+                ->where('persona_id', (int) $persona['id'])->first();
+            if ($existe) {
+                return ['cliente_id' => (int) $existe['id'], 'codigo' => $existe['codigo']];
+            }
+            $personaId = (int) $persona['id'];
+        } else {
+            $personaId = $this->personaSvc->crear($tenantId, self::TIPO, $d);
+        }
+
+        $codigo    = $this->clientes->siguienteCodigo($tenantId, $tenantNombre);
         $clienteId = $this->clientes->insert([
             'tenant_id'      => $tenantId,
             'persona_id'     => $personaId,

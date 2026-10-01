@@ -20,6 +20,7 @@
             <a href="#beneficios">Beneficios</a>
             <a href="#funciones">Funciones</a>
             <a href="#proceso">Proceso</a>
+            <a href="<?= base_url('descargar') ?>">App</a>
             <a href="#faq">Preguntas</a>
             <a href="#contacto">Contacto</a>
             <a href="<?= base_url('login') ?>" class="topnav-cta">Iniciar sesión</a>
@@ -198,9 +199,10 @@
                 <p>
                     Lleva la cobranza a la calle: tus asesores podrán registrar pagos,
                     consultar clientes y ver su ruta del día directamente desde el celular.
-                    La app Android está en desarrollo — muy pronto disponible para descargar.
                 </p>
-                <p class="app-note"><span class="line-chip">Android — próximamente</span></p>
+                <p class="app-note">
+                    <a href="<?= base_url('descargar') ?>" class="btn">Descargar la app Android</a>
+                </p>
             </div>
             <figure class="route" aria-label="Ejemplo de ruta de cobro del día">
                 <figcaption class="route-head">Ruta del día — viernes 26</figcaption>

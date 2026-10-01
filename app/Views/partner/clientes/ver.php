@@ -123,14 +123,32 @@ $empId = (int) $cliente['id'];
                     $updateUrl = base_url('socios/clientes/' . $empId . '/dato/' . $slug . '/' . $it['id'] . '/actualizar');
 
                     if ($slug === 'direccion') {
-                        // Diseño: Barrio como título, detalle como sub, Ver mapa como meta
+                        // Diseño: Barrio como título, detalle como sub, Waze/Maps como meta
                         $ubic = implode(' · ', array_filter([$it['departamento'] ?? '', $it['ciudad'] ?? '']));
                         $titulo = $it['barrio'] ?? $it['ciudad'] ?? 'Dirección';
                         $sub    = $it['detalle'] ?? '';
-                        $meta   = (!empty($it['latitud']) && !empty($it['longitud']))
-                            ? '<a class="oui-map" href="https://www.openstreetmap.org/?mlat=' . $it['latitud'] . '&mlon=' . $it['longitud'] . '#map=16/' . $it['latitud'] . '/' . $it['longitud'] . '" target="_blank" title="Ver en mapa">' . icon('map-pin', 14) . ' Mapa</a>'
-                            : '';
                         $chipTipo = $it['tipo'] ? '<span class="dir-tipo">' . esc($it['tipo']) . '</span>' : '';
+
+                        // Navegación: GPS si existe, si no búsqueda por texto (mismo patrón del portal)
+                        $conGps = is_numeric($it['latitud'] ?? null) && is_numeric($it['longitud'] ?? null);
+                        $dirTxt = trim(implode(', ', array_filter([
+                            $it['detalle'] ?? '', $it['barrio'] ?? '', $it['ciudad'] ?? '', $it['departamento'] ?? '',
+                        ])));
+                        if ($conGps) {
+                            $urlWaze = 'https://waze.com/ul?ll=' . $it['latitud'] . '%2C' . $it['longitud'] . '&navigate=yes';
+                            $urlMaps = 'https://www.google.com/maps/dir/?api=1&destination=' . $it['latitud'] . ',' . $it['longitud'];
+                        } elseif ($dirTxt !== '') {
+                            $urlWaze = 'https://waze.com/ul?q=' . urlencode($dirTxt) . '&navigate=yes';
+                            $urlMaps = 'https://www.google.com/maps/dir/?api=1&destination=' . urlencode($dirTxt);
+                        } else {
+                            $urlWaze = $urlMaps = null;
+                        }
+                        $meta = $urlWaze
+                            ? '<span class="oui-acts">'
+                                . '<a class="oui-map" href="' . esc($urlWaze) . '" target="_blank" rel="noopener" title="Abrir en Waze">' . icon('waze', 14) . ' Waze</a>'
+                                . '<a class="oui-map" href="' . esc($urlMaps) . '" target="_blank" rel="noopener" title="Abrir en Google Maps">' . icon('gmaps', 14) . ' Maps</a>'
+                              . '</span>'
+                            : '';
                     } else {
                         $vals = [];
                         foreach ($t['cols'] as $col => $label) {
@@ -145,6 +163,24 @@ $empId = (int) $cliente['id'];
                         $meta   = '';
                         $chipTipo = '';
                         $ubic = '';
+
+                        if ($slug === 'contacto') {
+                            // Acciones rápidas: llamar / WhatsApp / correo
+                            $tipoC  = strtolower((string) ($it['tipo'] ?? ''));
+                            $valorC = trim((string) ($it['valor'] ?? ''));
+                            $telC   = preg_replace('/\D/', '', $valorC);
+                            if (strlen($telC) === 8) $telC = '505' . $telC;   // Nicaragua por defecto
+                            $acts = '';
+                            if (in_array($tipoC, ['telefono', 'whatsapp'], true) && $telC !== '') {
+                                $acts .= '<a class="oui-map" href="tel:' . esc($telC) . '" title="Llamar">' . icon('phone', 14) . ' Llamar</a>'
+                                       . '<a class="oui-map" href="https://wa.me/' . esc($telC) . '" target="_blank" rel="noopener" title="Abrir WhatsApp">' . icon('whatsapp', 14) . ' WhatsApp</a>';
+                            } elseif ($tipoC === 'correo' && $valorC !== '') {
+                                $acts .= '<a class="oui-map" href="mailto:' . esc($valorC) . '" title="Escribir correo">' . icon('mail', 14) . ' Correo</a>';
+                            } elseif ($telC !== '') {
+                                $acts .= '<a class="oui-map" href="tel:' . esc($telC) . '" title="Llamar">' . icon('phone', 14) . ' Llamar</a>';
+                            }
+                            if ($acts !== '') $meta = '<span class="oui-acts">' . $acts . '</span>';
+                        }
                     }
                 ?>
                     <div class="oui-list-item oui-clickable" role="button"

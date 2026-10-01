@@ -10,8 +10,8 @@ $creador  = trim(($s['creador_nombres'] ?? '') . ' ' . ($s['creador_apellidos'] 
 $gestor   = trim(($s['gestor_nombres'] ?? '') . ' ' . ($s['gestor_apellidos'] ?? ''));
 
 // Cuota estimada (mismo cálculo que el wizard — sistema francés por período)
-$freqPagos  = ['D' => 30, 'DI' => 0, 'S' => 4.33, 'Q' => 2, 'M' => 1];
-$pagosXmes  = $s['frecuencia'] === 'DI' ? 4.33 * (int) ($s['dias_semana'] ?? 3) : ($freqPagos[$s['frecuencia']] ?? 1);
+$freqPagos  = ['D' => 30, 'DI' => 0, 'S' => 4, 'Q' => 2, 'M' => 1];
+$pagosXmes  = $s['frecuencia'] === 'DI' ? 4 * (int) ($s['dias_semana'] ?? 3) : ($freqPagos[$s['frecuencia']] ?? 1);
 $iP         = ((float) ($s['tasa_mensual'] ?? 0) / 100) / max($pagosXmes, 0.01);
 $n          = max(1, round(((int) ($s['plazo_meses'] ?? 0)) * $pagosXmes));
 $cuota      = $iP > 0 ? $s['monto'] * $iP * (1 + $iP) ** $n / ((1 + $iP) ** $n - 1) : ($s['monto'] / $n);
@@ -52,7 +52,13 @@ if ($editable ?? false) {
     <?php if ($estado === 'CONTACTO'): ?>
         <p class="sol-contacto-hint"><?= icon('phone', 14) ?> Llegó por la web — llama al cliente al <strong><?= esc($s['telefono'] ?: '—') ?></strong>, completa su expediente y pulsa «Iniciar gestión».</p>
     <?php endif; ?>
+    <?php if ($estado === 'REVISION' && !empty($s['nota_revision'])): ?>
+        <p class="sol-contacto-hint"><?= icon('message-square', 14) ?> Observación al gestor: <strong><?= esc($s['nota_revision']) ?></strong></p>
+    <?php endif; ?>
     <div class="sol-acciones">
+            <button type="button" class="btn btn-outline" data-modal="modal-historial">
+                <?= icon('activity', 15) ?> Historial
+            </button>
             <?php if ($estado === 'CONTACTO' && ($puede['CREADA'] ?? false)): ?>
                 <form method="post" action="<?= base_url('credito/solicitudes/' . $s['id'] . '/estado') ?>">
                     <?= csrf_field() ?><input type="hidden" name="estado" value="CREADA">
@@ -60,10 +66,9 @@ if ($editable ?? false) {
                 </form>
             <?php endif; ?>
             <?php if ($estado === 'CREADA' && ($puede['REVISION'] ?? false)): ?>
-                <form method="post" action="<?= base_url('credito/solicitudes/' . $s['id'] . '/estado') ?>">
-                    <?= csrf_field() ?><input type="hidden" name="estado" value="REVISION">
-                    <button class="btn btn-primary"><?= icon('send', 15) ?> Enviar a revisión</button>
-                </form>
+                <button type="button" class="btn btn-primary" data-modal="modal-revision">
+                    <?= icon('send', 15) ?> Enviar a revisión
+                </button>
             <?php endif; ?>
             <?php if ($estado === 'REVISION' && ($puede['APROBADA'] ?? false)): ?>
                 <?php if ($faltan === 0): ?>
@@ -76,6 +81,13 @@ if ($editable ?? false) {
             <?php endif; ?>
             <?php if ($estado === 'APROBADA' && ($puede['DESEMBOLSO'] ?? false)): ?>
                 <a href="<?= base_url('credito/solicitudes/' . $s['id'] . '/desembolsar') ?>" class="btn btn-primary"><?= icon('dollar-sign', 15) ?> Desembolsar</a>
+            <?php endif; ?>
+            <?php if ($estado === 'DESEMBOLSO' && ($puede['DESEMBOLSO'] ?? false)): ?>
+                <form method="post" action="<?= base_url('credito/solicitudes/' . $s['id'] . '/entregar') ?>"
+                      onsubmit="return confirm('¿Confirmar que el dinero ya fue entregado al cliente? El crédito quedará activo.');">
+                    <?= csrf_field() ?>
+                    <button class="btn btn-primary"><?= icon('check-circle', 15) ?> Marcar entregado</button>
+                </form>
             <?php endif; ?>
             <?php if (!in_array($estado, ['DESEMBOLSO', 'ACTIVO', 'RECHAZADA'], true) && ($puede['RECHAZADA'] ?? false)): ?>
                 <form method="post" action="<?= base_url('credito/solicitudes/' . $s['id'] . '/estado') ?>" onsubmit="return confirm('¿Rechazar esta solicitud?');">
@@ -205,5 +217,69 @@ if ($editable ?? false) {
 </div>
 
 </div><!-- /.sol-detail -->
+
+<!-- Modal: historial de la solicitud (quién la creó, movió, aprobó…) -->
+<div class="modal-overlay" id="modal-historial" hidden>
+    <div class="modal-box" style="max-width:480px;">
+        <div class="modal-head">
+            <h4><?= icon('activity', 16) ?> Historial de la solicitud</h4>
+            <button type="button" class="modal-close" data-close><?= icon('x', 18) ?></button>
+        </div>
+        <div class="modal-body">
+            <?php if (empty($historial)): ?>
+                <p class="geo-hint">Sin movimientos registrados aún.</p>
+            <?php else: ?>
+                <ul class="tl">
+                    <?php foreach ($historial as $h): ?>
+                        <?php
+                        $acc = $h['accion'] ?? 'ESTADO';
+                        $txt = $acc === 'CREADO'  ? 'Creó la solicitud'
+                             : ($acc === 'EDITADO' ? 'Editó los datos'
+                             : ('Movió a ' . mb_strtolower($lblEstado[$h['estado']] ?? $h['estado'] ?? '')));
+                        ?>
+                        <li class="tl-item">
+                            <div class="tl-dot tl-<?= strtolower($acc) ?>"></div>
+                            <div class="tl-body">
+                                <div class="tl-top">
+                                    <strong><?= esc($h['actor'] ?? 'Sistema') ?></strong>
+                                    <?php if (!empty($h['estado'])): ?>
+                                        <span class="badge sol-badge-<?= strtolower($h['estado']) ?>"><?= esc($lblEstado[$h['estado']] ?? $h['estado']) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <p class="tl-txt"><?= esc($txt) ?><?= !empty($h['nota']) ? ' — ' . esc($h['nota']) : '' ?></p>
+                                <small class="tl-fecha"><?= esc($h['created_at'] ?? '') ?></small>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: observaciones al enviar a revisión (la ve el gestor en portal/app) -->
+<div class="modal-overlay" id="modal-revision" hidden>
+    <div class="modal-box" style="max-width:440px;">
+        <div class="modal-head">
+            <h4><?= icon('send', 16) ?> Enviar a revisión</h4>
+            <button type="button" class="modal-close" data-close><?= icon('x', 18) ?></button>
+        </div>
+        <form method="post" action="<?= base_url('credito/solicitudes/' . $s['id'] . '/estado') ?>">
+            <?= csrf_field() ?>
+            <input type="hidden" name="estado" value="REVISION">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="obs-revision">Observaciones para el gestor</label>
+                    <textarea id="obs-revision" name="observaciones" rows="3" maxlength="255"
+                              placeholder="Qué le falta o qué debe corregir (opcional)"></textarea>
+                    <p class="geo-hint">El gestor la verá en su portal y en la app.</p>
+                </div>
+            </div>
+            <div class="modal-foot">
+                <button type="submit" class="btn btn-primary"><?= icon('send', 15) ?> Enviar</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <?= $this->endSection() ?>

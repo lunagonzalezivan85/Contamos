@@ -19,6 +19,11 @@
     var fpp    = document.getElementById('fecha_primer_pago');
     var dwrap  = document.getElementById('sol-dias-wrap');
 
+    // Select de gestor → paleta de búsqueda
+    if (gestor && window.BuscarSelect) {
+        BuscarSelect.enhance(gestor, { placeholder: 'Buscar gestor…', vacio: '— Sin asignar —' });
+    }
+
     var LBL_F = { D: 'Diario', DI: 'Diario intermitente', S: 'Semanal', Q: 'Quincenal', M: 'Mensual' };
     var PPM   = { D: 30, S: 4, Q: 2, M: 1 };
 

@@ -22,6 +22,78 @@ class LandingController extends BaseController
     }
 
     /**
+     * GET /descargar — página de descarga de la app del gestor.
+     * (La ruta no puede ser /app: la carpeta física public/app/ le gana
+     *  en el rewrite del servidor y termina en /public/app/.)
+     */
+    public function descargar()
+    {
+        if (session('logged_in')) {
+            return redirect()->to('/dashboard');
+        }
+
+        // Versión vigente según el manifest — el mismo que consulta la app
+        $mani  = FCPATH . 'app/version.json';
+        $v     = is_file($mani) ? (json_decode(file_get_contents($mani), true) ?: []) : [];
+        $vigente = $v['versionName'] ?? null;
+
+        // Todas las APKs versionadas en public/app (contamos-gestor-X.Y.Z.apk)
+        $versiones = [];
+        foreach (glob(FCPATH . 'app/contamos-gestor-*.apk') ?: [] as $f) {
+            if (preg_match('/contamos-gestor-(.+)\.apk$/', basename($f), $m)) {
+                $versiones[] = [
+                    'version' => $m[1],
+                    'size'    => number_format(filesize($f) / 1048576, 1) . ' MB',
+                    'url'     => base_url('descargar/apk/' . $m[1]),
+                    'actual'  => $vigente === $m[1],
+                ];
+            }
+        }
+        usort($versiones, fn($a, $b) => version_compare($b['version'], $a['version']));
+
+        return view('landing/app', [
+            'title'     => 'Contamos — App del gestor',
+            'vigente'   => $vigente,
+            'mensaje'   => $v['mensaje'] ?? null,
+            'versiones' => $versiones,
+        ]);
+    }
+
+    /**
+     * GET /descargar/apk[/{version}] — sirve la APK por PHP.
+     * Sin depender del MIME .apk del servidor web (IIS devuelve 404.3/500
+     * con extensiones no registradas).
+     */
+    public function apk(?string $version = null)
+    {
+        $dir = FCPATH . 'app/';
+        if ($version) {
+            // Solo el patrón de nombre esperado — nada de paths arbitrarios
+            if (!preg_match('/^\d+(\.\d+)*$/', $version)) {
+                throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+            }
+            $file = $dir . 'contamos-gestor-' . $version . '.apk';
+        } else {
+            // Sin versión → la más nueva disponible (la app la pide así)
+            $lista = glob($dir . 'contamos-gestor-*.apk') ?: [];
+            usort($lista, function ($a, $b) {
+                preg_match('/-(.+)\.apk$/', $a, $ma);
+                preg_match('/-(.+)\.apk$/', $b, $mb);
+                return version_compare($mb[1] ?? '0', $ma[1] ?? '0');
+            });
+            $file = $lista[0] ?? null;
+        }
+
+        if (!$file || !is_file($file)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        preg_match('/-(.+)\.apk$/', basename($file), $m);
+        return $this->response->download($file, null)
+            ->setFileName('contamos-gestor-' . ($m[1] ?? 'latest') . '.apk', true);
+    }
+
+    /**
      * POST /solicitar-acceso — formulario "Solicita tu usuario" de la landing
      */
     public function solicitarAcceso()

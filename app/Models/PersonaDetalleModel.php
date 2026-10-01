@@ -25,6 +25,7 @@ class PersonaDetalleModel extends Model
         'activo'      => ['tabla' => 'persona_activos',      'campos' => ['descripcion','valor']],
         'pasivo'      => ['tabla' => 'persona_pasivos',      'campos' => ['descripcion','acreedor','monto']],
         'ingreso'     => ['tabla' => 'persona_ingresos',     'campos' => ['fuente','monto']],
+        'egreso'      => ['tabla' => 'persona_egresos',      'campos' => ['descripcion','monto']],
         'documento'   => ['tabla' => 'persona_documentos',   'campos' => ['tipo','descripcion','archivo']],
     ];
 
@@ -63,5 +64,32 @@ class PersonaDetalleModel extends Model
     public function dePersona(int $personaId): array
     {
         return $this->where('persona_id', $personaId)->orderBy('id', 'DESC')->findAll();
+    }
+
+    /**
+     * ¿La persona ya tiene una fila idéntica a $fila? — anti-duplicado
+     * server-side para agregarDato (doble-submit / retry del form).
+     * Se ignoran 'archivo' (nombre random), 'id' y 'created_at'; los
+     * demás campos deben coincidir (null ≡ '' y numéricos por valor).
+     */
+    public function existeIgual(array $fila): bool
+    {
+        $items = $this->where('persona_id', (int) ($fila['persona_id'] ?? 0))->findAll();
+        foreach ($items as $it) {
+            $igual = true;
+            foreach ($fila as $campo => $val) {
+                if (in_array($campo, ['id', 'created_at', 'archivo'], true)) continue;
+                $a = $it[$campo] ?? null;
+                if (($a === null || $a === '') && ($val === null || $val === '')) continue;
+                if (is_numeric($a) && is_numeric($val)) {
+                    if ((float) $a === (float) $val) continue;
+                    $igual = false;
+                    break;
+                }
+                if ((string) $a !== (string) $val) { $igual = false; break; }
+            }
+            if ($igual) return true;
+        }
+        return false;
     }
 }

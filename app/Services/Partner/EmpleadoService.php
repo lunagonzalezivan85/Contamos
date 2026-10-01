@@ -85,6 +85,7 @@ class EmpleadoService
             'ruta'          => trim((string) ($d['ruta'] ?? '')) ?: null,
             'fecha_ingreso' => ($d['fecha_ingreso'] ?? '') ?: null,
             'estado'        => ($d['estado'] ?? '') ?: 'ACTIVO',
+            'puede_desembolsar' => !empty($d['puede_desembolsar']) ? 1 : 0,
         ]);
 
         return ['empleado_id' => (int) $empleadoId, 'carnet' => $carnet, 'pin' => $pin];
@@ -100,6 +101,7 @@ class EmpleadoService
             'ruta'          => trim((string) ($d['ruta'] ?? '')) ?: null,
             'fecha_ingreso' => ($d['fecha_ingreso'] ?? '') ?: null,
             'estado'        => ($d['estado'] ?? '') ?: 'ACTIVO',
+            'puede_desembolsar' => !empty($d['puede_desembolsar']) ? 1 : 0,
             'pin'           => trim((string) ($d['pin'] ?? '')) ?: $empleado['pin'],
         ]);
     }

@@ -43,7 +43,12 @@ class PersonaService
         foreach ((new PersonaDetalleModel())->tipos() as $tipo) {
             // Instancia nueva por tipo: el builder se reutilizaba y todas las
             // secciones consultaban la misma tabla.
-            $secciones[$tipo] = (new PersonaDetalleModel($tipo))->dePersona($personaId);
+            // try/catch: tabla hija sin migrar en el server → sección vacía, no 500.
+            try {
+                $secciones[$tipo] = (new PersonaDetalleModel($tipo))->dePersona($personaId);
+            } catch (\Throwable $e) {
+                $secciones[$tipo] = [];
+            }
         }
         return $secciones;
     }
@@ -73,6 +78,13 @@ class PersonaService
             $fila['archivo'] = $archivo;
         }
 
+        // Anti-duplicado server-side: el doble-submit del form no crea otra fila
+        if ($detalle->existeIgual($fila)) {
+            if (!empty($fila['archivo'])) {
+                @unlink(FCPATH . 'uploads' . DIRECTORY_SEPARATOR . 'documentos' . DIRECTORY_SEPARATOR . $fila['archivo']);
+            }
+            return ['ok' => true];
+        }
         $detalle->insert($fila);
         return ['ok' => true];
     }

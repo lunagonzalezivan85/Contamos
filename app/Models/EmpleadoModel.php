@@ -12,7 +12,7 @@ class EmpleadoModel extends Model
     protected $returnType       = 'array';
     protected $useTimestamps    = true;
 
-    protected $allowedFields = ['tenant_id', 'persona_id', 'carnet', 'pin', 'cargo', 'ruta', 'fecha_ingreso', 'estado'];
+    protected $allowedFields = ['tenant_id', 'persona_id', 'carnet', 'pin', 'cargo', 'ruta', 'fecha_ingreso', 'estado', 'puede_desembolsar'];
 
     /**
      * Siguiente carnet del tenant: iniciales del nombre + consecutivo (ej. TI-0001).

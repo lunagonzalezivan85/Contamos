@@ -18,7 +18,7 @@ class SolicitudModel extends Model
         'monto_aprobado', 'tasa_aprobada', 'plazo_aprobado', 'frecuencia_aprobada', 'fecha_primer_pago',
         'fecha_desembolso', 'fecha_entrega', 'codigo_credito', 'saldo_favor',
         'tipo_calculo', 'gracia_meses', 'gracia_tipo', 'comision', 'seguro',
-        'refinancia_id', 'paso_dias',
+        'refinancia_id', 'paso_dias', 'nota_revision',
     ];
 
     /** Estados del flujo de solicitud. */
@@ -80,8 +80,21 @@ class SolicitudModel extends Model
      */
     public function filtrar(int $tenantId, array $f = []): self
     {
-        $this->select('solicitudes.*, personas.nombres, personas.apellidos, personas.cedula, clientes.codigo,
+        $this->select('solicitudes.*, personas.nombres, personas.apellidos, personas.cedula,
+                       personas.telefono, personas.direccion, clientes.codigo,
                        pg.nombres AS gestor_nombres, pg.apellidos AS gestor_apellidos, e.carnet AS gestor_carnet')
+             // Primera dirección del cliente (una persona puede tener varias)
+             // y primer contacto teléfono/whatsapp como fallback de personas.telefono.
+             // prefijo explícito: los strings raw (escape=false) no pasan por protectIdentifiers
+             ->select('(SELECT d.latitud  FROM ' . $this->db->prefixTable('persona_direcciones')
+                 . ' d WHERE d.persona_id = ' . $this->db->prefixTable('personas')
+                 . '.id ORDER BY d.id ASC LIMIT 1) AS geo_lat', false)
+             ->select('(SELECT d.longitud FROM ' . $this->db->prefixTable('persona_direcciones')
+                 . ' d WHERE d.persona_id = ' . $this->db->prefixTable('personas')
+                 . '.id ORDER BY d.id ASC LIMIT 1) AS geo_lng', false)
+             ->select('(SELECT c.valor FROM ' . $this->db->prefixTable('persona_contactos')
+                 . ' c WHERE c.persona_id = ' . $this->db->prefixTable('personas')
+                 . ".id AND LOWER(c.tipo) IN ('telefono','whatsapp','celular') ORDER BY c.id ASC LIMIT 1) AS contacto_tel", false)
              ->join('clientes', 'clientes.id = solicitudes.cliente_id')
              ->join('personas', 'personas.id = clientes.persona_id')
              ->join('empleados e', 'e.id = solicitudes.asignado_a', 'left')

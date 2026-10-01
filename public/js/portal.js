@@ -193,13 +193,25 @@
     });
 
     // El action depende del crédito elegido: /portal/cobros/{id}/abonar
+    // + anti doble-submit: una vez enviado el form queda bloqueado (evita
+    // solicitudes/abonos duplicados por doble-tap o Enter repetido).
     document.addEventListener('submit', function (e) {
-        var form = e.target.closest('form[data-action-tpl]');
+        var form = e.target.closest('form');
         if (!form) return;
-        var sel = form.querySelector('select[name="solicitud_id"]');
-        if (sel && sel.value) {
-            form.action = form.dataset.actionTpl.replace('__ID__', sel.value);
+        if (form.dataset.actionTpl) {
+            var sel = form.querySelector('select[name="solicitud_id"]');
+            if (sel && sel.value) {
+                form.action = form.dataset.actionTpl.replace('__ID__', sel.value);
+            }
         }
+        if (e.defaultPrevented || form.dataset.noLock !== undefined) return;
+        if (form.dataset.enviado === '1') { e.preventDefault(); return; }
+        form.dataset.enviado = '1';
+        // Solo feedback visual: disabled aquí excluiría el name=value del
+        // submitter del POST; el flag de arriba ya bloquea re-submits.
+        form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (b) {
+            b.classList.add('enviando');
+        });
     });
 
     // Item clickeable → modal en modo edición (prellena y cambia action a /actualizar)
@@ -352,6 +364,26 @@
             if (e.key === 'Enter') { e.preventDefault(); geoBuscar(); }
         });
     }
+
+    /* ---------- Buscador de lista: <input data-buscar="#sel .item" data-empty="id"> ---------- */
+    document.querySelectorAll('[data-buscar]').forEach(function (inp) {
+        var items = document.querySelectorAll(inp.dataset.buscar);
+        var vacio = inp.dataset.empty ? document.getElementById(inp.dataset.empty) : null;
+        var norm = function (s) {
+            return (s || '').toLowerCase()
+                .normalize('NFD').replace(/[̀-ͯ]/g, '');   // sin tildes
+        };
+        inp.addEventListener('input', function () {
+            var q = norm(inp.value.trim());
+            var visibles = 0;
+            items.forEach(function (it) {
+                var ok = q === '' || norm(it.textContent).indexOf(q) !== -1;
+                it.style.display = ok ? '' : 'none';
+                if (ok) visibles++;
+            });
+            if (vacio) vacio.hidden = visibles > 0;
+        });
+    });
 
     // Botón GPS — captura la ubicación actual del gestor
     var gpsBtn = document.getElementById('geo-gps');

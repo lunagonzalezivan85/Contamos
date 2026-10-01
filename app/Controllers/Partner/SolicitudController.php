@@ -27,6 +27,11 @@ class SolicitudController extends BaseController
         $tenantId = (int) session('tenant_id');
         $f        = $this->request->getGet(['q', 'estado', 'gestor', 'ruta', 'desde', 'hasta']);
         $f        = array_map(static fn ($v) => trim((string) $v), $f);
+        // Sin param en la URL → arranca en CREADA (lo que hay por procesar);
+        // ?estado= vacío = "Todos"
+        if ($this->request->getGet('estado') === null) {
+            $f['estado'] = SolicitudModel::CREADA;
+        }
 
         $lista    = $this->svc->listar($tenantId, $f);
         $opciones = $this->svc->opcionesFiltro($tenantId);
@@ -38,7 +43,12 @@ class SolicitudController extends BaseController
             'f'         => $lista['f'],
             'gestores'  => $opciones['gestores'],
             'rutas'     => $opciones['rutas'],
-            'estados'   => SolicitudModel::ESTADOS,
+            // Orden del pipeline; "Por contactar" (leads web) y Todos al final
+            'estados'   => [
+                SolicitudModel::CREADA, SolicitudModel::REVISION, SolicitudModel::APROBADA,
+                SolicitudModel::DESEMBOLSO, SolicitudModel::ACTIVO, SolicitudModel::LIQUIDADO,
+                SolicitudModel::RECHAZADA, SolicitudModel::CONTACTO,
+            ],
             'lblEstado' => SolicitudModel::LABEL_ESTADO,
             'lblFreq'   => SolicitudService::LBL_FREQ,
             'mon'       => $this->svc->moneda($tenantId),
@@ -91,6 +101,7 @@ class SolicitudController extends BaseController
         return view('partner/solicitudes/ver', [
             'title'     => 'Solicitud #' . $sol['id'] . ' — Contamos',
             's'         => $sol,
+            'historial' => $this->svc->historialDe($tenantId, $id),
             'checklist' => $checklist,
             'faltan'    => $faltan,
             'editable'  => $editable && ($puede[SolicitudModel::REVISION] ?? false), // REVISION usa solicitudes.editar
@@ -122,7 +133,9 @@ class SolicitudController extends BaseController
             return redirect()->back()->with('error', $r['error']);
         }
 
-        $this->svc->moverEstado($id, $nuevo);
+        // Observación opcional — visible al gestor cuando va a REVISION
+        $nota = trim((string) $this->request->getPost('observaciones'));
+        $this->svc->moverEstado($sol, $nuevo, $nota !== '' ? $nota : null);
 
         $lbl = SolicitudModel::LABEL_ESTADO[$nuevo] ?? $nuevo;
         return redirect()->to('/credito/solicitudes/' . $id)
@@ -262,10 +275,32 @@ class SolicitudController extends BaseController
                 ->with('error', 'La fecha de desembolso no puede ser pasada.');
         }
 
-        $this->svc->guardarDesembolso($id, (string) $this->request->getPost('fecha_desembolso'));
+        $this->svc->guardarDesembolso($sol, (string) $this->request->getPost('fecha_desembolso'));
 
         return redirect()->to('/credito/solicitudes/' . $id)
             ->with('success', 'Desembolso programado para el ' . $this->request->getPost('fecha_desembolso') . '. El gestor lo verá en su portal.');
+    }
+
+    /**
+     * POST /credito/solicitudes/{id}/entregar — la oficina marca el dinero
+     * como entregado (útil cuando el gestor no tiene el permiso o entregó
+     * en ventanilla). Misma transacción que usa el portal del gestor.
+     */
+    public function entregarDesembolso(int $id)
+    {
+        $tenantId = (int) session('tenant_id');
+        $sol      = $this->svc->find($tenantId, $id);
+        if (!$sol) {
+            return redirect()->to('/credito/solicitudes')->with('error', 'Solicitud no encontrada.');
+        }
+
+        $r = (new \App\Services\Partner\PortalService())->entregarDesembolso($tenantId, null, $id);
+        if (!$r['ok']) {
+            return redirect()->to('/credito/solicitudes/' . $id)->with('error', $r['error']);
+        }
+
+        return redirect()->to('/credito/solicitudes/' . $id)
+            ->with('success', 'Desembolso entregado — crédito ' . $r['codigo'] . ' activo.');
     }
 
     /**

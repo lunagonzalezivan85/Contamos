@@ -57,6 +57,9 @@ $empId = (int) $empleado['id'];
         <span class="badge badge-soft"><?= esc($empleado['carnet'] ?? '—') ?></span>
         <span class="badge"><?= esc($empleado['estado'] ?? 'ACTIVO') ?></span>
         <span class="badge badge-soft"><?= esc($empleado['cargo'] ?? 'Empleado') ?></span>
+        <span class="badge <?= !empty($empleado['puede_desembolsar']) ? 'badge-soft' : 'badge-danger' ?>">
+            <?= !empty($empleado['puede_desembolsar']) ? 'Entrega desembolsos' : 'Sin desembolsos' ?>
+        </span>
     </div>
     <div class="persona-meta">
         <span><?= icon('user', 13) ?> <?= esc($persona['cedula'] ?? '—') ?></span>

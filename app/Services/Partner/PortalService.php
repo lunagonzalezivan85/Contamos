@@ -7,6 +7,7 @@ use App\Models\ClienteModel;
 use App\Models\EmpleadoModel;
 use App\Models\PersonaDetalleModel;
 use App\Models\PersonaModel;
+use App\Models\SolicitudHistorialModel;
 use App\Models\SolicitudModel;
 use App\Models\TenantModel;
 
@@ -21,6 +22,7 @@ class PortalService
     private PersonaModel     $personas;
     private ClienteModel     $clientes;
     private SolicitudModel   $solicitudes;
+    private SolicitudHistorialModel $historial;
     private \CodeIgniter\Database\BaseConnection $db;
 
     public function __construct()
@@ -30,6 +32,7 @@ class PortalService
         $this->personas    = new PersonaModel();
         $this->clientes    = new ClienteModel();
         $this->solicitudes = new SolicitudModel();
+        $this->historial   = new SolicitudHistorialModel();
         $this->db          = \Config\Database::connect();
     }
 
@@ -310,10 +313,22 @@ class PortalService
         }
 
         // Datos complementarios por pestaña (direccion, contacto, referencia, ...)
+        // Si una tabla hija no existe aún en el server (migración pendiente)
+        // la sección queda vacía en vez de tumbar toda la ficha con un 500.
         $secciones = [];
         foreach ((new PersonaDetalleModel())->tipos() as $tipo) {
-            $secciones[$tipo] = (new PersonaDetalleModel($tipo))->dePersona((int) $per['id']);
+            try {
+                $secciones[$tipo] = (new PersonaDetalleModel($tipo))->dePersona((int) $per['id']);
+            } catch (\Throwable $e) {
+                $secciones[$tipo] = [];
+            }
         }
+        // URL lista para ver/descargar el archivo (la app no arma rutas)
+        foreach ($secciones['documento'] as &$doc) {
+            $doc['archivo_url'] = !empty($doc['archivo'])
+                ? base_url('public/uploads/documentos/' . $doc['archivo']) : null;
+        }
+        unset($doc);
 
         return [
             'cliente'     => $cli,
@@ -392,7 +407,7 @@ class PortalService
                 'destino' => trim((string) ($d['destino'] ?? '')) ?: null,
             ]);
         } else {
-            $this->solicitudes->insert([
+            $solId = (int) $this->solicitudes->insert([
                 'tenant_id'  => $tenantId,
                 'cliente_id' => $clienteId,
                 'monto'      => (float) $d['monto'],
@@ -401,6 +416,8 @@ class PortalService
                 'estado'     => SolicitudModel::CONTACTO,
                 'origen'     => 'WEB',
             ]);
+            $this->historial->registrar($tenantId, $solId, SolicitudHistorialModel::CREADO,
+                SolicitudModel::CONTACTO, 'Llegó por el formulario web', ['nombre' => 'Web']);
         }
 
         $this->db->transComplete();
@@ -460,8 +477,23 @@ class PortalService
                 . number_format($limiteCli, 0) . ').'];
         }
 
+        // Anti-duplicado server-side: mismo gestor + cliente + monto en los
+        // últimos 5 min = reenvío del form (doble-tap / retry de la app).
+        // En modo cliente nuevo también cubre que no se duplique persona+ficha.
+        $dup = $this->solicitudes->where('tenant_id', $tenantId)
+            ->where('cliente_id', $clienteId)
+            ->where('empleado_id', (int) $empleado['id'])
+            ->where('monto', $monto)
+            ->whereNotIn('estado', [SolicitudModel::RECHAZADA, SolicitudModel::LIQUIDADO])
+            ->where('created_at >=', date('Y-m-d H:i:s', time() - 300))
+            ->first();
+        if ($dup) {
+            $this->db->transComplete();
+            return ['ok' => true, 'duplicada' => true];
+        }
+
         // Cartera: la solicitud la creó el gestor y queda asignada a él (su ruta)
-        $this->solicitudes->insert([
+        $solId = (int) $this->solicitudes->insert([
             'tenant_id'    => $tenantId,
             'cliente_id'   => $clienteId,
             'empleado_id'  => (int) $empleado['id'],   // quién la creó
@@ -483,6 +515,8 @@ class PortalService
             'destino'      => trim((string) ($d['destino'] ?? '')) ?: null,
             'estado'       => SolicitudModel::CREADA,
         ]);
+        $this->historial->registrar($tenantId, $solId, SolicitudHistorialModel::CREADO,
+            SolicitudModel::CREADA, null, $this->actorGestor($empleado));
 
         $this->db->transComplete();
         if (!$this->db->transStatus()) {
@@ -493,18 +527,30 @@ class PortalService
     }
 
     /**
-     * El gestor marca el dinero como entregado: genera código de crédito y activa.
+     * Marca el dinero como entregado: genera código de crédito y activa.
+     * $empleadoId null = entrega registrada desde oficina (sin chequeo de
+     * cartera ni del flag puede_desembolsar).
      * @return array{ok: bool, codigo?: string, error?: string}
      */
-    public function entregarDesembolso(int $tenantId, int $empleadoId, int $solId): array
+    public function entregarDesembolso(int $tenantId, ?int $empleadoId, int $solId): array
     {
+        // El gestor necesita el permiso de caja habilitado en su ficha
+        if ($empleadoId !== null) {
+            $emp = $this->empleados->find($empleadoId);
+            if ($emp && empty($emp['puede_desembolsar'])) {
+                return ['ok' => false, 'error' => 'No tenés permiso para entregar desembolsos.'];
+            }
+        }
+
         // Transacción: la lectura del MAX(codigo_credito) y el update deben ser
         // atómicos o dos desembolsos simultáneos generan el mismo código.
         $this->db->transStart();
 
-        $sol = $this->solicitudes->where('tenant_id', $tenantId)
-            ->where('asignado_a', $empleadoId)
-            ->find($solId);
+        $q = $this->solicitudes->where('tenant_id', $tenantId);
+        if ($empleadoId !== null) {
+            $q->where('asignado_a', $empleadoId);
+        }
+        $sol = $q->find($solId);
         if (!$sol || $sol['estado'] !== SolicitudModel::DESEMBOLSO) {
             $this->db->transComplete();
             return ['ok' => false, 'error' => 'Desembolso no encontrado o ya fue entregado.'];
@@ -518,6 +564,12 @@ class PortalService
             'codigo_credito' => $codigo,
             'fecha_entrega'  => date('Y-m-d H:i:s'),   // egreso real — alimenta el arqueo del gestor
         ]);
+        $this->historial->registrar($tenantId, $solId, SolicitudHistorialModel::ESTADO,
+            SolicitudModel::ACTIVO, 'Dinero entregado — crédito ' . $codigo,
+            $empleadoId !== null
+                ? $this->actorGestor($emp ?? [])
+                : ['user_id' => (int) session('user_id') ?: null,
+                   'nombre'  => session('nombre') ?: 'Oficina']);
 
         // Plan de pago persistido: una fila en `cuotas` por cuota proyectada
         $pagos = new PagoService();
@@ -780,6 +832,13 @@ class PortalService
         if ($fila === null) {
             return ['ok' => false, 'error' => 'El documento no debe superar 5 MB.'];
         }
+        // Anti-duplicado server-side: el doble-submit del form no crea otra fila
+        if ($detalle->existeIgual($fila)) {
+            if (!empty($fila['archivo'])) {
+                @unlink(FCPATH . 'uploads' . DIRECTORY_SEPARATOR . 'documentos' . DIRECTORY_SEPARATOR . $fila['archivo']);
+            }
+            return ['ok' => true];
+        }
         $detalle->insert($fila);
 
         return ['ok' => true];
@@ -860,6 +919,115 @@ class PortalService
     }
 
     // ---------------------------------------------------------------
+
+    /**
+     * Solicitud de la cartera del gestor (asignada a él o creada por él).
+     * Null si no existe, no es del tenant o no es suya.
+     */
+    public function solicitudDeGestor(int $tenantId, int $empleadoId, int $solId): ?array
+    {
+        return $this->solicitudes
+            ->where('tenant_id', $tenantId)
+            ->groupStart()
+                ->where('asignado_a', $empleadoId)
+                ->orWhere('empleado_id', $empleadoId)
+            ->groupEnd()
+            ->find($solId);
+    }
+
+    /**
+     * El gestor edita su solicitud — solo mientras esté en CREADA o REVISION
+     * (típicamente corregir lo que oficina observó en `nota_revision`).
+     * @return array{ok: bool, error?: string}
+     */
+    public function actualizarSolicitudGestor(array $tenant, array $empleado, int $solId, array $d): array
+    {
+        $tenantId = (int) $tenant['id'];
+        $sol = $this->solicitudDeGestor($tenantId, (int) $empleado['id'], $solId);
+        if (!$sol) {
+            return ['ok' => false, 'error' => 'Solicitud no encontrada en tu cartera.'];
+        }
+        if (!in_array($sol['estado'], [SolicitudModel::CREADA, SolicitudModel::REVISION], true)) {
+            return ['ok' => false, 'error' => 'Solo podés editar solicitudes creadas o en revisión.'];
+        }
+
+        $monto = (float) ($d['monto'] ?? 0);
+        if ($monto < 1000) {
+            return ['ok' => false, 'error' => 'El monto mínimo a prestar es 1,000.'];
+        }
+        $cli = $this->clientes->where('tenant_id', $tenantId)->find((int) $sol['cliente_id']);
+        $limite = (float) ($cli['limite_credito'] ?? 0) > 0 ? (float) $cli['limite_credito'] : 10000.00;
+        if ($monto > $limite) {
+            return ['ok' => false, 'error' => 'El monto supera el límite de crédito del cliente ('
+                . number_format($limite, 0) . ').'];
+        }
+        $plazoMax = (int) ($tenant['plazo_meses_max'] ?? 0);
+        $plazo = ($d['plazo_meses'] ?? '') !== '' ? (int) $d['plazo_meses'] : null;
+        if ($plazo !== null && $plazoMax > 0 && $plazo > $plazoMax) {
+            return ['ok' => false, 'error' => "El plazo máximo permitido es {$plazoMax} meses."];
+        }
+
+        $freq = (string) ($d['frecuencia'] ?? $sol['frecuencia'] ?? 'M');
+        $this->solicitudes->update($solId, [
+            'monto'             => $monto,
+            'plazo_meses'       => $plazo,
+            'frecuencia'        => $freq,
+            'dias_semana'       => $freq === 'DI' ? (int) ($d['dias_semana'] ?? 0) : null,
+            'tasa_mensual'      => min(max(0.0, (float) ($d['tasa_mensual'] ?? $sol['tasa_mensual'])),
+                                       (float) ($tenant['tasa_interes'] ?? 0)),
+            'fecha_primer_pago' => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($d['fecha_primer_pago'] ?? ''))
+                ? $d['fecha_primer_pago'] : null,
+            'destino'           => trim((string) ($d['destino'] ?? '')) ?: null,
+        ]);
+        $this->historial->registrar($tenantId, $solId, SolicitudHistorialModel::EDITADO,
+            null, null, $this->actorGestor($empleado));
+
+        return ['ok' => true];
+    }
+
+    /**
+     * Feed de eventos sobre las solicitudes del gestor (las que creó o le
+     * asignaron): quién las creó, movió o aprobó — sección "Actividad".
+     */
+    public function historialGestor(int $tenantId, int $empleadoId, int $limite = 30): array
+    {
+        try {
+            return $this->historial
+                ->select('solicitud_historial.*, solicitudes.cliente_id,
+                          personas.nombres, personas.apellidos')
+                ->join('solicitudes', 'solicitudes.id = solicitud_historial.solicitud_id')
+                ->join('clientes', 'clientes.id = solicitudes.cliente_id')
+                ->join('personas', 'personas.id = clientes.persona_id')
+                ->where('solicitud_historial.tenant_id', $tenantId)
+                ->groupStart()
+                    ->where('solicitudes.asignado_a', $empleadoId)
+                    ->orWhere('solicitudes.empleado_id', $empleadoId)
+                ->groupEnd()
+                ->orderBy('solicitud_historial.id', 'DESC')
+                ->findAll($limite);
+        } catch (\Throwable $e) {
+            // log_error vive en Common.php — si el server lo tiene viejo
+            // el catch mismo reventaría con "undefined function".
+            if (function_exists('log_error')) {
+                log_error('PortalService::historialGestor', $e);
+            } else {
+                log_message('error', 'historialGestor: ' . $e->getMessage());
+            }
+            return [];
+        }
+    }
+
+    /** Actor gestor para el historial (empleado_id + nombre de su persona). */
+    private function actorGestor(array $empleado): array
+    {
+        $id = (int) ($empleado['id'] ?? 0);
+        $nombre = '';
+        if ($id > 0) {
+            $per    = $this->personaDeEmpleado($id);
+            $nombre = trim(($per['nombres'] ?? '') . ' ' . ($per['apellidos'] ?? ''));
+        }
+        return ['empleado_id' => $id ?: null, 'nombre' => $nombre !== '' ? $nombre : 'Gestor'];
+    }
 
     /** Ficha de cliente para una persona; la crea si no existe. */
     private function fichaClienteId(int $tenantId, int $personaId, string $tenantNombre): int

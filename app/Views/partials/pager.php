@@ -14,7 +14,7 @@ $pager->setSurroundCount(2);
 <nav class="pager-nav" aria-label="Paginación">
     <ul class="pager">
         <?php if ($pager->hasPrevious()): ?>
-            <li><a class="pager-btn" href="<?= $pager->getPreviousPage() ?>" aria-label="Anterior"><?= icon('chevron-left', 15) ?></a></li>
+            <li><a class="pager-btn" href="<?= $pager->getPrevious() ?>" aria-label="Anterior"><?= icon('chevron-left', 15) ?></a></li>
         <?php endif; ?>
 
         <?php foreach ($pager->links() as $link): ?>
@@ -22,9 +22,9 @@ $pager->setSurroundCount(2);
         <?php endforeach; ?>
 
         <?php if ($pager->hasNext()): ?>
-            <li><a class="pager-btn" href="<?= $pager->getNextPage() ?>" aria-label="Siguiente"><?= icon('chevron-right', 15) ?></a></li>
+            <li><a class="pager-btn" href="<?= $pager->getNext() ?>" aria-label="Siguiente"><?= icon('chevron-right', 15) ?></a></li>
         <?php endif; ?>
     </ul>
-    <p class="pager-info">Página <?= $pager->getCurrentPage() ?> de <?= $pager->getPageCount() ?> · <?= $pager->getTotal() ?> registro(s)</p>
+    <p class="pager-info">Página <?= $pager->getCurrent() ?> de <?= $pager->getPageCount() ?><?= method_exists($pager, 'getTotal') ? ' · ' . $pager->getTotal() . ' registro(s)' : '' ?></p>
 </nav>
 <?php endif; ?>

@@ -28,6 +28,8 @@ $tabs = [
         'cols' => ['descripcion' => 'Descripción', 'acreedor' => 'Acreedor', 'monto' => 'Monto']],
     'ingreso'     => ['nombre' => 'Ingresos',     'icono' => 'dollar-sign',
         'cols' => ['fuente' => 'Fuente', 'monto' => 'Monto']],
+    'egreso'      => ['nombre' => 'Egresos',      'icono' => 'trending-down',
+        'cols' => ['descripcion' => 'Descripción', 'monto' => 'Monto/mes']],
     'documento'   => ['nombre' => 'Documentos',   'icono' => 'file-text',
         'cols' => ['tipo' => 'Tipo', 'descripcion' => 'Descripción', 'archivo' => 'Archivo']],
 ];
@@ -36,7 +38,7 @@ $fieldSelects = [
     'documento.tipo'           => ['cedula' => 'Cédula', 'pasaporte' => 'Pasaporte', 'contrato' => 'Contrato', 'cartas' => 'Cartas', 'otro' => 'Otro'],
     'negocio.sector_economico' => ['comercio' => 'Comercio', 'servicios' => 'Servicios', 'alimentos' => 'Alimentos y bebidas', 'agricultura' => 'Agricultura', 'artesanias' => 'Artesanías', 'transporte' => 'Transporte', 'otro' => 'Otro'],
 ];
-$fieldNumber = ['negocio.promedio_venta_dia', 'activo.valor', 'pasivo.monto', 'ingreso.monto'];
+$fieldNumber = ['negocio.promedio_venta_dia', 'activo.valor', 'pasivo.monto', 'ingreso.monto', 'egreso.monto'];
 $cliId  = (int) $cliente['id'];
 $base   = $slug . '/portal/cliente/' . $cliId;
 $nombre = trim(($persona['nombres'] ?? '') . ' ' . ($persona['apellidos'] ?? ''));
@@ -183,8 +185,16 @@ $urlMaps = function (array $d) use ($tieneGps, $dirTexto): string {
                                         · <span class="badge st-warn"><?= $cobroSol['en_revision'] ?> pago(s) en revisión</span>
                                     <?php endif; ?>
                                 </span>
+                                <?php if (!empty($s['nota_revision']) && $s['estado'] === 'REVISION'): ?>
+                                    <span class="oui-sub sol-nota-rev"><?= icon('message-square', 12) ?> <?= esc($s['nota_revision']) ?></span>
+                                <?php endif; ?>
                             </span>
                             <span class="badge <?= in_array($s['estado'], ['ACTIVO', 'DESEMBOLSO'], true) ? 'badge-soft' : '' ?>"><?= esc($s['estado']) ?></span>
+                            <?php if (in_array($s['estado'], ['CREADA', 'REVISION'], true)): ?>
+                                <a class="btn btn-outline btn-sm" href="<?= base_url($slug . '/portal/solicitud/' . $s['id'] . '/editar') ?>">
+                                    <?= icon('edit', 13) ?> Editar
+                                </a>
+                            <?php endif; ?>
                             <?php if ($cobroSol && !empty($cobroSol['cuotas_pend'])): ?>
                                 <button type="button" class="btn btn-primary btn-sm"
                                         data-modal="modal-pago"
