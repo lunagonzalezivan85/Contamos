@@ -228,6 +228,91 @@ class TenantService
         return '';
     }
 
+    /** Suspende/reactiva la suscripción (plan_al_dia la lee — cierra panel, portal y app). */
+    public function toggleSuscripcion(int $id): string
+    {
+        $t = $this->db->table('tenants')->where('id', $id)->get()->getRowArray();
+        if (!$t) return 'Tenant no encontrado.';
+        $nuevo = ($t['suscripcion_estado'] ?? 'ACTIVA') === 'ACTIVA' ? 'SUSPENDIDA' : 'ACTIVA';
+        $this->db->table('tenants')->where('id', $id)
+            ->update(['suscripcion_estado' => $nuevo, 'updated_at' => date('Y-m-d H:i:s')]);
+        return '';
+    }
+
+    /** Condiciones de cobro del contrato: día de pago (5|10) + días de gracia. */
+    public function condicionesSuscripcion(int $id, array $d): string
+    {
+        $dia    = (int) ($d['dia_pago'] ?? 10);
+        $gracia = (int) ($d['gracia_dias'] ?? 4);
+        if (!in_array($dia, [5, 10], true)) $dia = 10;
+
+        $this->db->table('tenants')->where('id', $id)->update([
+            'dia_pago'    => $dia,
+            'gracia_dias' => max(0, min(30, $gracia)),
+            'updated_at'  => date('Y-m-d H:i:s'),
+        ]);
+        return '';
+    }
+
+    /** Saldo pendiente de suscripción — lo que debe saldar antes del exporte. */
+    public function saldoPendiente(int $tenantId): float
+    {
+        return (float) ($this->db->table('plan_pagos')
+            ->selectSum('monto')->where('tenant_id', $tenantId)->where('estado', 'PENDIENTE')
+            ->get()->getRowArray()['monto'] ?? 0);
+    }
+
+    /**
+     * Datos del tenant para el exporte Excel (solicitud de información del
+     * cliente suspendido): clientes, créditos con su plan, pagos/abonos y
+     * historial de suscripción.
+     */
+    public function exporteDatos(int $tenantId): array
+    {
+        $clientes = $this->db->table('clientes c')
+            ->select('p.nombres, p.apellidos, p.cedula, p.telefono, p.email,
+                      c.limite_credito, c.monto_max, c.monto_min, c.estado, c.created_at')
+            ->join('personas p', 'p.id = c.persona_id')
+            ->where('c.tenant_id', $tenantId)->orderBy('p.apellidos')->get()->getResultArray();
+
+        $creditos = $this->db->table('solicitudes s')
+            ->select('s.codigo_credito, CONCAT(p.nombres, " ", p.apellidos) AS cliente, s.monto,
+                      s.monto_aprobado, s.tasa_aprobada, s.plazo_aprobado, s.frecuencia_aprobada,
+                      s.tipo_calculo, s.estado, s.fecha_desembolso, s.saldo_favor, s.created_at')
+            ->join('clientes c', 'c.id = s.cliente_id')
+            ->join('personas p', 'p.id = c.persona_id')
+            ->where('s.tenant_id', $tenantId)->orderBy('s.id', 'DESC')->get()->getResultArray();
+
+        $pagos = $this->db->table('pagos pa')
+            ->select('s.codigo_credito, CONCAT(p.nombres, " ", p.apellidos) AS cliente,
+                      pa.monto, pa.metodo, pa.tipo, pa.fecha_hora, pa.estado, pa.observacion')
+            ->join('solicitudes s', 's.id = pa.solicitud_id', 'left')
+            ->join('clientes c', 'c.id = s.cliente_id', 'left')
+            ->join('personas p', 'p.id = c.persona_id', 'left')
+            ->where('pa.tenant_id', $tenantId)->orderBy('pa.fecha_hora', 'DESC')->get()->getResultArray();
+
+        $suscripcion = $this->db->table('plan_pagos')
+            ->where('tenant_id', $tenantId)->orderBy('periodo', 'DESC')->get()->getResultArray();
+
+        return compact('clientes', 'creditos', 'pagos', 'suscripcion');
+    }
+
+    /** Marca en audit_logs que se exportaron los datos del tenant. */
+    public function auditarExporte(int $tenantId, int $adminId, float $saldoSaldado): void
+    {
+        $this->db->table('audit_logs')->insert([
+            'tenant_id'    => $tenantId,
+            'user_id'      => $adminId,
+            'accion'       => 'EXPORTE_DATOS',
+            'modulo'       => 'admin',
+            'entidad'      => 'tenant',
+            'entidad_id'   => $tenantId,
+            'datos_nuevos' => json_encode(['saldo_saldado' => $saldoSaldado]),
+            'ip'           => service('request')->getIPAddress(),
+            'created_at'   => date('Y-m-d H:i:s'),
+        ]);
+    }
+
     /**
      * Replica la seguridad del tenant 1: árbol de menús, role_menus y
      * role_permissions (mismo algoritmo que TenantDemoSeeder).
@@ -306,6 +391,28 @@ class TenantService
                 ]);
             }
         }
+    }
+
+    /**
+     * Sugerir slug a partir del nombre de la empresa — devuelve el primero
+     * libre en tenants ("mi-empresa" → "mi-empresa-2" → ...). Usado por el
+     * botón «Generar» del form de alta (GET /admin/tenants/slug-sugerir).
+     */
+    public function sugerirSlug(string $nombre): string
+    {
+        $base = $this->slugify($nombre) ?: 'empresa';
+        $slug = $base;
+        $i    = 2;
+        while ($this->db->table('tenants')->where('slug', $slug)->countAllResults() > 0) {
+            $slug = $base . '-' . $i++;
+        }
+        return $slug;
+    }
+
+    /** ¿Ese slug ya está tomado? (para el chequeo en vivo del form) */
+    public function slugOcupado(string $slug): bool
+    {
+        return $slug !== '' && $this->db->table('tenants')->where('slug', $slug)->countAllResults() > 0;
     }
 
     private function slugify(string $s): string

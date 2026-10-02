@@ -46,6 +46,11 @@ class Menu extends BaseConfig
             'url'    => '/admin/usuarios',
         ],
         [
+            'nombre' => 'Leads',
+            'icono'  => 'target',
+            'url'    => '/admin/leads',
+        ],
+        [
             'nombre' => 'Auditoría',
             'icono'  => 'activity',
             'url'    => null,

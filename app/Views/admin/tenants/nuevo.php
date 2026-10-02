@@ -10,31 +10,49 @@
     <a class="btn" href="<?= base_url('admin/tenants') ?>">← Volver</a>
 </div>
 
-<div class="card" style="max-width:760px;">
-    <h3 class="card-title">Datos de la empresa</h3>
-    <p class="card-subtitle">Campos mínimos para operar. Se puede editar luego desde el propio tenant.</p>
+<form method="post" action="<?= base_url('admin/tenants') ?>">
+    <?= csrf_field() ?>
 
-    <form method="post" action="<?= base_url('admin/tenants') ?>" class="mt-4">
-        <?= csrf_field() ?>
+    <div class="form-cols">
+        <div class="card">
+            <h3 class="card-title"><?= icon('briefcase', 16) ?> Datos de la empresa</h3>
+            <p class="card-subtitle">Campos mínimos para operar — se pueden editar luego desde el propio tenant.</p>
 
-        <div class="frow">
-            <div class="fgroup">
+            <div class="fgroup mt-4">
                 <label>Nombre *</label>
                 <input class="inp" type="text" name="nombre" required maxlength="150" value="<?= esc(old('nombre')) ?>">
             </div>
             <div class="fgroup">
                 <label>Slug (portal público)</label>
-                <input class="inp" type="text" name="slug" maxlength="100" placeholder="auto si se omite" value="<?= esc(old('slug')) ?>">
+                <div class="input-btn">
+                    <input class="inp" type="text" name="slug" id="inp-slug" maxlength="100"
+                           placeholder="auto si se omite" value="<?= esc(old('slug')) ?>"
+                           autocomplete="off" autocapitalize="none">
+                    <button type="button" class="btn" id="btn-gen-slug" title="Genera un slug libre a partir del nombre">Generar</button>
+                </div>
+                <small class="text-muted" id="slug-hint">Si se omite se genera del nombre.</small>
+            </div>
+            <div class="frow">
+                <div class="fgroup">
+                    <label>Email</label>
+                    <input class="inp" type="email" name="email" maxlength="150" value="<?= esc(old('email')) ?>">
+                </div>
+                <div class="fgroup">
+                    <label>Contacto</label>
+                    <input class="inp" type="text" name="contacto_nombre" maxlength="150" value="<?= esc(old('contacto_nombre')) ?>">
+                </div>
             </div>
             <div class="fgroup">
-                <label>Email</label>
-                <input class="inp" type="email" name="email" maxlength="150" value="<?= esc(old('email')) ?>">
+                <label>Moneda</label>
+                <input class="inp" type="text" name="moneda" maxlength="10" value="<?= esc(old('moneda') ?: 'C$') ?>">
             </div>
-            <div class="fgroup">
-                <label>Contacto</label>
-                <input class="inp" type="text" name="contacto_nombre" maxlength="150" value="<?= esc(old('contacto_nombre')) ?>">
-            </div>
-            <div class="fgroup">
+        </div>
+
+        <div class="card">
+            <h3 class="card-title"><?= icon('percent', 16) ?> Plan y crédito</h3>
+            <p class="card-subtitle">Plan SaaS del servicio y parámetros base para sus créditos.</p>
+
+            <div class="fgroup mt-4">
                 <label>Plan</label>
                 <select class="inp" name="plan_id">
                     <option value="">— Sin plan —</option>
@@ -45,21 +63,21 @@
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="fgroup">
-                <label>Moneda</label>
-                <input class="inp" type="text" name="moneda" maxlength="10" value="<?= esc(old('moneda') ?: 'C$') ?>">
-            </div>
-            <div class="fgroup">
-                <label>Tasa mensual (%)</label>
-                <input class="inp" type="number" name="tasa_interes" step="0.01" min="0" value="<?= esc(old('tasa_interes') ?: '3') ?>">
-            </div>
-            <div class="fgroup">
-                <label>Plazo máximo (meses)</label>
-                <input class="inp" type="number" name="plazo_meses_max" min="1" value="<?= esc(old('plazo_meses_max') ?: '24') ?>">
+            <div class="frow">
+                <div class="fgroup">
+                    <label>Tasa mensual (%)</label>
+                    <input class="inp" type="number" name="tasa_interes" step="0.01" min="0" value="<?= esc(old('tasa_interes') ?: '3') ?>">
+                </div>
+                <div class="fgroup">
+                    <label>Plazo máximo (meses)</label>
+                    <input class="inp" type="number" name="plazo_meses_max" min="1" value="<?= esc(old('plazo_meses_max') ?: '24') ?>">
+                </div>
             </div>
         </div>
+    </div>
 
-        <h3 class="card-title" style="margin-top:24px;">Usuario administrador</h3>
+    <div class="card">
+        <h3 class="card-title"><?= icon('user', 16) ?> Usuario administrador</h3>
         <p class="card-subtitle">Opcional — si se omite, se crea después. La contraseña se cambia en el primer login.</p>
         <div class="frow mt-4">
             <div class="fgroup">
@@ -71,12 +89,13 @@
                 <input class="inp" type="text" name="admin_password" maxlength="100" autocomplete="off">
             </div>
         </div>
+    </div>
 
-        <div style="display:flex; gap:10px; margin-top:8px;">
-            <button type="submit" class="btn btn-primary">Crear tenant</button>
-            <a class="btn" href="<?= base_url('admin/tenants') ?>">Cancelar</a>
-        </div>
-    </form>
-</div>
+    <div class="form-actions">
+        <a class="btn" href="<?= base_url('admin/tenants') ?>">Cancelar</a>
+        <button type="submit" class="btn btn-primary"><?= icon('check', 14) ?> Crear tenant</button>
+    </div>
+</form>
 
+<script src="<?= v_asset('js/admin-tenant.js') ?>"></script>
 <?= $this->endSection() ?>

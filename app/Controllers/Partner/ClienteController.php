@@ -101,9 +101,10 @@ class ClienteController extends BaseController
         }
 
         return view('partner/clientes/form', [
-            'title'   => 'Editar cliente — Contamos',
-            'cliente' => array_merge($cp['persona'], $cp['cliente']),
-            'accion'  => '/socios/clientes/' . $id . '/editar',
+            'title'     => 'Editar cliente — Contamos',
+            'cliente'   => array_merge($cp['persona'], $cp['cliente']),
+            'accion'    => '/socios/clientes/' . $id . '/editar',
+            'bloqueado' => $this->svc->bloqueado($id),
         ]);
     }
 
@@ -119,10 +120,13 @@ class ClienteController extends BaseController
                 ->with('error', 'Revise los datos: ' . implode(' ', $this->validator->getErrors()));
         }
 
-        $this->svc->actualizar($cp['cliente'], $cp['persona'], $this->request->getPost());
+        $r = $this->svc->actualizar($cp['cliente'], $cp['persona'], $this->request->getPost());
 
         return redirect()->to('/socios/clientes/' . $id)
-            ->with('success', 'Cliente actualizado correctamente.');
+            ->with($r['bloqueado'] ? 'warning' : 'success',
+                $r['bloqueado']
+                    ? 'Cliente actualizado — el nombre y la cédula no se tocaron porque tiene un crédito vigente.'
+                    : 'Cliente actualizado correctamente.');
     }
 
     /** POST /socios/clientes/{id}/dato/{tipo} — agrega un item a una pestaña. */

@@ -198,8 +198,8 @@ class ConnectController extends BaseController
         $ficha = $this->fichaApp($slug, $id);
         if (isset($ficha['resp'])) return $ficha['resp'];
 
-        $this->portal->actualizarDatosCliente($ficha['cliente'], $this->datos());
-        return $this->response->setJSON(['ok' => true]);
+        $r = $this->portal->actualizarDatosCliente($ficha['cliente'], $this->datos());
+        return $this->response->setJSON(['ok' => true, 'bloqueado' => $r['bloqueado']]);
     }
 
     /** POST /{slug}/connect/cliente/{id}/dato/{tipo} — item del expediente (dir, contacto, ...). */

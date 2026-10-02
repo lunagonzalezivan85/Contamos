@@ -463,6 +463,7 @@ class PortalController extends BaseController
             'title'       => trim($ficha['persona']['nombres'] . ' ' . $ficha['persona']['apellidos']) . ' - ' . $tenant['nombre'],
             'tenant'      => $tenant, 'slug' => $slug,
             'cliente'     => $ficha['cliente'], 'persona' => $ficha['persona'],
+            'bloqueado'   => $ficha['bloqueado'] ?? false,
             'secciones'   => $ficha['secciones'],
             'solicitudes' => $ficha['solicitudes'],
             'cobros'      => $ficha['cobros'] ?? [],
@@ -497,12 +498,15 @@ class PortalController extends BaseController
                 ->with('error', 'Revise los datos: ' . implode(' ', $this->validator->getErrors()));
         }
 
-        $this->portal->actualizarDatosCliente($cli, $this->request->getPost(
+        $r = $this->portal->actualizarDatosCliente($cli, $this->request->getPost(
             ['nombres', 'apellidos', 'genero', 'cedula', 'telefono', 'email', 'direccion', 'fecha_nac']
         ));
 
         return redirect()->to('/' . $slug . '/portal/cliente/' . $id)
-            ->with('success', 'Datos del cliente actualizados.');
+            ->with($r['bloqueado'] ? 'warning' : 'success',
+                $r['bloqueado']
+                    ? 'Datos guardados — nombre y cédula no cambiaron porque el cliente tiene un crédito vigente.'
+                    : 'Datos del cliente actualizados.');
     }
 
     /** POST /{slug}/portal/cliente/{id}/dato/{tipo} - agrega un item a una pestaña. */

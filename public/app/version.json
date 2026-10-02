@@ -1,6 +1,6 @@
 {
-    "versionCode": 3,
-    "versionName": "1.1.1",
+    "versionCode": 4,
+    "versionName": "1.2.0",
     "url": "descargar/apk",
-    "mensaje": "Editar solicitudes desde la ficha del cliente (CREADA/REVISION) + observaciones de oficina."
+    "mensaje": "Entrada simplificada + candado de identidad del cliente + chequeo de actualización al abrir."
 }

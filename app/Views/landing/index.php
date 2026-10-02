@@ -40,7 +40,7 @@
             </p>
             <div class="hero-actions">
                 <a href="<?= base_url('login') ?>" class="btn">Acceder al sistema</a>
-                <a href="#beneficios" class="link-more">Conocer más</a>
+                <a href="<?= base_url('alta') ?>" class="link-more">Darse de alta</a>
             </div>
         </div>
 

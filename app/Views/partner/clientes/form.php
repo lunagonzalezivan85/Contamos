@@ -2,7 +2,7 @@
 
 <?= $this->section('content') ?>
 
-<?php $c = $cliente ?? []; $esEditar = !empty($c); ?>
+<?php $c = $cliente ?? []; $esEditar = !empty($c); $bloq = $bloqueado ?? false; ?>
 
 <?= view('partials/detail_hero', [
     'titulo'    => $esEditar ? 'Editar cliente' : 'Nuevo cliente',
@@ -15,6 +15,11 @@
     <form action="<?= base_url(ltrim($accion, '/')) ?>" method="post" class="form">
         <?= csrf_field() ?>
 
+        <?php if ($bloq): ?>
+            <p class="card-subtitle" style="margin-bottom:16px;">
+                Este cliente tiene un crédito vigente — el nombre y la cédula no se pueden editar.
+            </p>
+        <?php endif; ?>
         <div class="form-grid">
             <div class="form-group">
                 <label for="codigo">Código de cliente</label>
@@ -23,12 +28,12 @@
             </div>
             <div class="form-group">
                 <label for="nombres">Nombres *</label>
-                <input type="text" id="nombres" name="nombres" required
+                <input type="text" id="nombres" name="nombres" required <?= $bloq ? 'readonly' : '' ?>
                        value="<?= esc(old('nombres', $c['nombres'] ?? '')) ?>">
             </div>
             <div class="form-group">
                 <label for="apellidos">Apellidos *</label>
-                <input type="text" id="apellidos" name="apellidos" required
+                <input type="text" id="apellidos" name="apellidos" required <?= $bloq ? 'readonly' : '' ?>
                        value="<?= esc(old('apellidos', $c['apellidos'] ?? '')) ?>">
             </div>
             <div class="form-group">
@@ -42,7 +47,7 @@
             </div>
             <div class="form-group">
                 <label for="cedula">Cédula</label>
-                <input type="text" id="cedula" name="cedula"
+                <input type="text" id="cedula" name="cedula" <?= $bloq ? 'readonly' : '' ?>
                        value="<?= esc(old('cedula', $c['cedula'] ?? '')) ?>">
             </div>
             <div class="form-group">

@@ -117,4 +117,48 @@ class LandingController extends BaseController
         return redirect()->to('/#contacto')
             ->with('acceso_ok', 'Solicitud recibida — te contactaremos para crear tu usuario.');
     }
+
+    /**
+     * GET /alta — "Darte de alta": calculadora de plan a medida sobre el
+     * plan Básico + formulario de activación (nombre + WhatsApp).
+     */
+    public function alta()
+    {
+        $base = db_connect()->table('planes')->where('slug', 'basico')->get()->getRowArray()
+            ?: ['precio_mensual' => 19, 'moneda' => 'USD', 'max_usuarios' => 1,
+                'max_empleados' => 5, 'max_creditos_activos' => 50, 'nombre' => 'Básico'];
+
+        return view('landing/alta', [
+            'title' => 'Contamos — Da de alta tu negocio',
+            'base'  => $base,
+        ]);
+    }
+
+    /**
+     * POST /alta — guarda el lead en acceso_solicitudes con el plan estimado
+     * y devuelve su código partner (PTR-######).
+     */
+    public function altaStore()
+    {
+        $rules = [
+            'nombre'    => 'required|min_length[3]|max_length[160]',
+            'telefono'  => 'required|min_length[7]|max_length[30]',
+            'usuarios'  => 'required|integer|greater_than_equal_to[1]|less_than_equal_to[25]',
+            'clientes'  => 'required|integer|greater_than_equal_to[10]|less_than_equal_to[500]',
+            'creditos'  => 'required|integer|greater_than_equal_to[20]|less_than_equal_to[1000]',
+            'empleados' => 'required|integer|greater_than_equal_to[1]|less_than_equal_to[50]',
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->to('/alta')->withInput()
+                ->with('alta_error', 'Revisá los datos e intentalo de nuevo.');
+        }
+
+        $d      = $this->request->getPost(['nombre', 'telefono', 'usuarios', 'clientes', 'creditos', 'empleados']);
+        $codigo = (new LandingService())->registrarAlta($d);
+
+        return redirect()->to('/alta')
+            ->with('alta_ok', 'Tu solicitud fue enviada — te contactaremos en breve para activar tu cuenta.')
+            ->with('alta_codigo', $codigo);
+    }
 }

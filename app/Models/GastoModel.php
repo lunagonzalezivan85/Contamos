@@ -86,7 +86,7 @@ class GastoModel extends Model
     /** Totales por categoría dentro de un rango — para las tarjetas/resumen. */
     public function totalesPorCategoria(int $tenantId, array $f = []): array
     {
-        $b = $this->select('gasto_categorias.nombre AS categoria,
+        $b = $this->select('gastos.categoria_id, gasto_categorias.nombre AS categoria,
                             COUNT(*) AS n, SUM(' . $this->db->prefixTable('gastos') . '.monto) AS total')
             ->join('gasto_categorias', 'gasto_categorias.id = gastos.categoria_id')
             ->where('gastos.tenant_id', $tenantId)

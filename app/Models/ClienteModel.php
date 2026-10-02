@@ -59,4 +59,17 @@ class ClienteModel extends Model
     {
         return $this->filtrar($tenantId, $buscar)->findAll();
     }
+
+    /**
+     * ¿El cliente tiene un crédito vigente (desembolso en marcha o activo)?
+     * Si sí, su identidad (nombres, apellidos, cédula) queda bloqueada en
+     * edición — partner, portal del gestor y app respetan este candado.
+     */
+    public function tieneCreditoActivo(int $clienteId): bool
+    {
+        return (new SolicitudModel())
+            ->where('cliente_id', $clienteId)
+            ->whereIn('estado', [SolicitudModel::DESEMBOLSO, SolicitudModel::ACTIVO])
+            ->countAllResults() > 0;
+    }
 }

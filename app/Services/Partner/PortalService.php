@@ -333,6 +333,7 @@ class PortalService
         return [
             'cliente'     => $cli,
             'persona'     => $per,
+            'bloqueado'   => $this->clientes->tieneCreditoActivo($clienteId),
             'secciones'   => $secciones,
             'solicitudes' => $this->solicitudes
                 ->where('tenant_id', $tenantId)
@@ -791,19 +792,30 @@ class PortalService
         ];
     }
 
-    /** Actualiza los datos básicos de la persona del cliente (desde el portal). */
-    public function actualizarDatosCliente(array $cliente, array $d): void
+    /**
+     * Datos básicos de la persona del cliente (portal del gestor y app).
+     * Si el cliente tiene crédito vigente la identidad (nombres, apellidos,
+     * cédula) está bloqueada: se ignoran los valores recibidos y se conservan
+     * los actuales — el resto de campos sí se actualiza.
+     * @return array{ok: bool, bloqueado: bool}
+     */
+    public function actualizarDatosCliente(array $cliente, array $d): array
     {
+        $bloqueado = $this->clientes->tieneCreditoActivo((int) $cliente['id']);
+        $persona   = $bloqueado ? $this->personas->find((int) $cliente['persona_id']) : null;
+
         $this->personas->update((int) $cliente['persona_id'], [
-            'nombres'   => trim((string) $d['nombres']),
-            'apellidos' => trim((string) $d['apellidos']),
+            'nombres'   => $bloqueado ? $persona['nombres'] : trim((string) $d['nombres']),
+            'apellidos' => $bloqueado ? $persona['apellidos'] : trim((string) $d['apellidos']),
             'genero'    => in_array($d['genero'] ?? null, ['M', 'F'], true) ? $d['genero'] : null,
-            'cedula'    => trim((string) ($d['cedula'] ?? '')) ?: null,
+            'cedula'    => $bloqueado ? $persona['cedula'] : (trim((string) ($d['cedula'] ?? '')) ?: null),
             'telefono'  => trim((string) ($d['telefono'] ?? '')) ?: null,
             'email'     => trim((string) ($d['email'] ?? '')) ?: null,
             'direccion' => trim((string) ($d['direccion'] ?? '')) ?: null,
             'fecha_nac' => ($d['fecha_nac'] ?? '') !== '' ? $d['fecha_nac'] : null,
         ]);
+
+        return ['ok' => true, 'bloqueado' => $bloqueado];
     }
 
     // ---------------------------------------------------------------

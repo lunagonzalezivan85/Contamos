@@ -83,6 +83,60 @@
     </div>
 </div>
 
+<?php $susp = ($t['suscripcion_estado'] ?? 'ACTIVA') === 'SUSPENDIDA'; ?>
+<div class="card">
+    <div class="toolbar" style="margin-bottom:14px;">
+        <h3 class="card-title" style="margin:0;">Suscripción SaaS</h3>
+        <form method="post" action="<?= base_url('admin/tenants/' . $t['id'] . '/suscripcion') ?>" style="display:inline;"
+              onsubmit="return confirm('¿<?= $susp ? 'Reactivar' : 'Suspender' ?> el plan de <?= esc($t['nombre'], 'attr') ?>? <?= $susp ? 'Vuelve el acceso al panel, portal y app.' : 'Se cierra el panel, portal y app del gestor.' ?>');">
+            <?= csrf_field() ?>
+            <button class="btn btn-sm <?= $susp ? 'btn-primary' : 'btn-danger' ?>">
+                <?= icon($susp ? 'check' : 'alert-triangle', 13) ?> <?= $susp ? 'Reactivar plan' : 'Suspender plan' ?>
+            </button>
+        </form>
+    </div>
+    <form method="post" action="<?= base_url('admin/tenants/' . $t['id'] . '/condiciones') ?>" class="frow" style="grid-template-columns:repeat(3,1fr); align-items:end;">
+        <?= csrf_field() ?>
+        <div class="fgroup" style="margin:0;">
+            <label>Día de pago (cada mes)</label>
+            <select class="inp" name="dia_pago">
+                <option value="5"  <?= (int) ($t['dia_pago'] ?? 10) === 5 ? 'selected' : '' ?>>Día 5</option>
+                <option value="10" <?= (int) ($t['dia_pago'] ?? 10) === 10 ? 'selected' : '' ?>>Día 10</option>
+            </select>
+        </div>
+        <div class="fgroup" style="margin:0;">
+            <label>Días de gracia</label>
+            <input class="inp" type="number" name="gracia_dias" min="0" max="30" value="<?= (int) ($t['gracia_dias'] ?? 4) ?>">
+        </div>
+        <div><button class="btn" type="submit"><?= icon('save', 13) ?> Guardar condiciones</button></div>
+    </form>
+    <p class="text-muted" style="margin:10px 0 0; font-size:12px;">
+        Estado: <span class="tag <?= $susp ? 'tag-inactivo' : 'tag-activo' ?>"><?= esc($t['suscripcion_estado'] ?? 'ACTIVA') ?></span>
+        · vencen el día <?= (int) ($t['dia_pago'] ?? 10) ?> + <?= (int) ($t['gracia_dias'] ?? 4) ?>d de gracia — pasado el corte, el cron <code>cobros:generar</code> suspende automáticamente.
+    </p>
+
+    <?php if ($susp): ?>
+        <div class="mc-est" style="margin-top:12px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:200px;">
+                <b>Exporte de datos</b> — cartera completa en Excel (clientes, créditos, pagos y suscripción).<br>
+                <small class="text-muted">
+                    <?= $saldo > 0
+                        ? 'Saldo pendiente: USD ' . number_format($saldo, 2) . ' — el cliente debe saldarlo (botón Cobrar) antes de habilitar el exporte.'
+                        : 'Sin saldo pendiente — el exporte está habilitado.' ?>
+                </small>
+            </div>
+            <?php if ($saldo > 0): ?>
+                <button type="button" class="btn" disabled title="Primero saldar el pendiente"><?= icon('archive', 13) ?> Exporte bloqueado</button>
+            <?php else: ?>
+                <a class="btn btn-primary" href="<?= base_url('admin/tenants/' . $t['id'] . '/exporte') ?>"
+                   onclick="return confirm('¿Generar el Excel con toda la cartera de <?= esc($t['nombre'], 'attr') ?>?');">
+                    <?= icon('archive', 13) ?> Descargar Excel
+                </a>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+</div>
+
 <div class="card">
     <div class="toolbar" style="margin-bottom:14px;">
         <h3 class="card-title" style="margin:0;">Usuarios del tenant</h3>

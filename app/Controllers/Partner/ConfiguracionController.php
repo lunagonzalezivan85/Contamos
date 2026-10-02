@@ -31,6 +31,8 @@ class ConfiguracionController extends BaseController
             'plantillas' => $this->svc->plantillasDe($tenantId),
             'tiposCalc'  => \App\Services\Partner\SolicitudService::TIPOS_CALCULO,
             'mon'        => $this->svc->tenant($tenantId)['moneda'] ?? 'C$',
+            'cobro'      => plan_cobro_mes($tenantId),     // desglose plan + sobreconsumo
+            'planEstado' => plan_al_dia($tenantId),        // corte/estado de la suscripción
         ]);
     }
 

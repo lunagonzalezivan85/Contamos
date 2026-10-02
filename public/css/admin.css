@@ -142,6 +142,24 @@ body {
 .topbar h2 { font-size: 18px; font-weight: 600; }
 .topbar .user { font-size: 14px; color: var(--text-muted); }
 
+/* Hamburguesa — oculta en desktop, aparece en móvil para el drawer */
+.topbar-menu {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 38px; height: 38px;
+    margin-right: 10px;
+    border: none;
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(26, 32, 44, .08);
+    cursor: pointer;
+}
+
+/* Fondo oscuro tras el drawer del sidebar — solo en móvil */
+.sidebar-scrim { display: none; }
+
 .content { padding: 32px; }
 
 /* ---------- Flash ---------- */
@@ -241,6 +259,18 @@ body {
 @media (max-width: 768px) {
     .sidebar { transform: translateX(-100%); transition: transform .25s; }
     .sidebar.open { transform: translateX(0); }
+    .topbar-menu { display: inline-flex; }
+    .sidebar-scrim {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(26, 32, 44, .45);
+        z-index: 90; /* bajo el sidebar, sobre el contenido */
+    }
+    .sidebar-scrim[hidden] { display: none; }
+    .topbar { padding: 10px 14px; gap: 10px; }
+    .topbar .user { display: none; }
+    .topbar-menu { border-radius: 50%; margin-right: 0; }
     .main { margin-left: 0; }
     .content { padding: 20px; }
 }
@@ -321,3 +351,39 @@ body {
 .dd-item:hover { background: #F1F5F9; }
 .dd-item.danger { color: #DC2626; }
 .dd-item.danger:hover { background: #FEE2E2; }
+
+/* ==========================================================================
+   tenants/nuevo � layout en columnas + leads: chips de estado
+   ========================================================================== */
+.form-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.form-cols .card { margin-bottom: 20px; }
+.input-btn { display: flex; gap: 8px; }
+.input-btn .inp { flex: 1; }
+.form-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+.chip-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    background: #fff; border: 1px solid #E2E8F0; color: var(--text-muted);
+    text-decoration: none; cursor: pointer;
+}
+.chip:hover { border-color: var(--primary); color: var(--primary-dark); }
+.chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.chip .n {
+    font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+    background: #F1F5F9; color: var(--text-muted);
+}
+.chip.on .n { background: rgba(255, 255, 255, .25); color: #fff; }
+
+@media (max-width: 900px) {
+    .form-cols { grid-template-columns: 1fr; }
+}
+
+/* Modal Contactar (leads) � sliders + estimado */
+.mc-slider { width: 100%; accent-color: var(--primary); cursor: pointer; margin: 4px 0 2px; }
+.mc-est {
+    background: var(--primary-soft, #E6F9F2); border: 1px dashed var(--primary);
+    border-radius: 10px; padding: 10px 14px; font-size: 14px; color: var(--secondary-dark);
+}
+.mc-est b { font-size: 18px; }

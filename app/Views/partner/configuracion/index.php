@@ -9,6 +9,39 @@
     <p class="page-subtitle">Datos generales de su empresa.</p>
 </div>
 
+<?php if (!empty($cobro['plan'])): ?>
+<div class="card mb-4">
+    <h4 class="card-title">Mi plan y consumo</h4>
+    <p class="card-subtitle">
+        Plan <?= esc($cobro['plan']) ?> · $<?= number_format((float) $cobro['precio'], 2) ?> <?= esc($cobro['moneda']) ?>/mes
+        · próximo corte: <b><?= !empty($planEstado['proximo']) ? esc(date('d/m/Y', strtotime($planEstado['proximo']))) : '—' ?></b>
+    </p>
+
+    <div class="consumo-rows">
+        <div class="consumo-row consumo-head">
+            <span>Concepto</span><span>Uso actual</span><span>Incluido</span><span>Extra</span><span>Cargo</span>
+        </div>
+        <?php foreach ($cobro['recursos'] as $r): ?>
+        <div class="consumo-row">
+            <span><?= esc($r['label']) ?></span>
+            <span><?= (int) $r['uso'] ?></span>
+            <span><?= $r['incluido'] < 0 ? '∞' : (int) $r['incluido'] ?></span>
+            <span class="<?= $r['extra'] > 0 ? 'consumo-over' : 'text-muted' ?>"><?= $r['extra'] > 0 ? '+' . (int) $r['extra'] : '—' ?></span>
+            <span><?= $r['monto'] > 0 ? '$' . number_format($r['monto'], 2) : '—' ?></span>
+        </div>
+        <?php endforeach; ?>
+        <div class="consumo-row consumo-total">
+            <span>Estimado del ciclo (plan + sobreconsumo)</span><span></span><span></span><span></span>
+            <span>$<?= number_format((float) $cobro['total'], 2) ?> <?= esc($cobro['moneda']) ?></span>
+        </div>
+    </div>
+    <p class="card-subtitle mt-4">
+        Extras por unidad: usuario $3.00 · empleado $1.00 · crédito activo $0.15 · cliente $0.20.
+        El cobro se confirma sobre el consumo al día de corte de la factura.
+    </p>
+</div>
+<?php endif; ?>
+
 <div class="card">
     <h4 class="card-title">Datos de la empresa</h4>
     <p class="card-subtitle">Esta información aparece en reportes y documentos.</p>

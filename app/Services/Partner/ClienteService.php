@@ -110,9 +110,27 @@ class ClienteService
         return ['cliente_id' => (int) $clienteId, 'codigo' => $codigo];
     }
 
-    /** Actualiza persona + cliente (límites, montos, observaciones, estado). */
-    public function actualizar(array $cliente, array $persona, array $d): void
+    /** Identidad bloqueada: true si el cliente tiene crédito vigente. */
+    public function bloqueado(int $clienteId): bool
     {
+        return $this->clientes->tieneCreditoActivo($clienteId);
+    }
+
+    /**
+     * Actualiza persona + cliente (límites, montos, observaciones, estado).
+     * Con crédito vigente la identidad (nombres, apellidos, cédula) se ignora
+     * y conserva los valores actuales — el resto del form sí se guarda.
+     * @return array{ok: bool, bloqueado: bool}
+     */
+    public function actualizar(array $cliente, array $persona, array $d): array
+    {
+        $bloqueado = $this->clientes->tieneCreditoActivo((int) $cliente['id']);
+        if ($bloqueado) {
+            $d['nombres']   = $persona['nombres'];
+            $d['apellidos'] = $persona['apellidos'];
+            $d['cedula']    = $persona['cedula'];
+        }
+
         $this->personaSvc->actualizar((int) $persona['id'], self::TIPO, $d);
 
         $this->clientes->update((int) $cliente['id'], [
@@ -122,6 +140,8 @@ class ClienteService
             'observaciones'  => trim((string) ($d['observaciones'] ?? '')) ?: null,
             'estado'         => ($d['estado'] ?? '') ?: 'ACTIVO',
         ]);
+
+        return ['ok' => true, 'bloqueado' => $bloqueado];
     }
 
     // --- Expediente: delega en PersonaService ---------------------------

@@ -12,6 +12,8 @@ $routes->get('descargar', 'Shared\LandingController::descargar');               
 $routes->get('descargar/apk', 'Shared\LandingController::apk');                  // última versión del APK
 $routes->get('descargar/apk/(:segment)', 'Shared\LandingController::apk/$1');    // versión puntual
 $routes->post('solicitar-acceso', 'Shared\LandingController::solicitarAcceso');
+$routes->get('alta',  'Shared\LandingController::alta');                          // registro + calculadora de plan
+$routes->post('alta', 'Shared\LandingController::altaStore');                     // recibe el lead con su plan estimado
 
 // Autenticación
 $routes->get('login', 'Shared\AuthController::login');
@@ -95,9 +97,13 @@ $routes->group('admin', ['filter' => 'admin', 'namespace' => 'App\Controllers\Ad
     $routes->get('tenants',               'TenantController::index');
     $routes->get('tenants/nuevo',         'TenantController::nuevo');
     $routes->post('tenants',              'TenantController::guardar');
+    $routes->get('tenants/slug-sugerir',  'TenantController::slugSugerir');       // antes de (:num)
     $routes->get('tenants/(:num)',        'TenantController::ver/$1');
-    $routes->post('tenants/(:num)/toggle','TenantController::toggle/$1');
-$routes->post('tenants/(:num)/cobrar','TenantController::cobrar/$1');
+    $routes->post('tenants/(:num)/toggle',   'TenantController::toggle/$1');
+    $routes->post('tenants/(:num)/suscripcion', 'TenantController::suscripcion/$1');
+    $routes->post('tenants/(:num)/condiciones', 'TenantController::condiciones/$1');
+    $routes->get('tenants/(:num)/exporte',   'TenantController::exporte/$1');
+    $routes->post('tenants/(:num)/cobrar','TenantController::cobrar/$1');
     $routes->post('tenants/(:num)/usuarios/(:num)/quitar', 'TenantController::quitarUsuario/$1/$2');
 
     // Usuarios de todos los tenants: listado, alta, edición, estado, clave
@@ -109,6 +115,16 @@ $routes->post('tenants/(:num)/cobrar','TenantController::cobrar/$1');
     $routes->post('usuarios/(:num)/toggle',  'UsuarioController::toggle/$1');
     $routes->post('usuarios/(:num)/clave',   'UsuarioController::resetClave/$1');
     $routes->post('usuarios/(:num)/reset-rapido', 'UsuarioController::resetRapido/$1');
+
+    // Leads — solicitudes de alta de la landing (acceso_solicitudes)
+    $routes->get('leads',                        'LeadsController::index');
+    $routes->post('leads/(:num)/contactar',      'LeadsController::contactar/$1');
+    $routes->post('leads/(:num)/estado',         'LeadsController::estado/$1');
+    $routes->post('leads/(:num)/rechazar',       'LeadsController::rechazar/$1');
+
+    // Contratos de servicio SaaS (desde un lead CONTACTADO)
+    $routes->post('leads/(:num)/contrato',       'ContratosController::guardar/$1');
+    $routes->get('contratos/(:num)',             'ContratosController::ver/$1');
 
     // Auditoría global (audit_logs)
     $routes->get('auditoria', 'AuditoriaController::index');

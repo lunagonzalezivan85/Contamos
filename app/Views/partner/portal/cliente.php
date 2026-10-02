@@ -109,21 +109,24 @@ $urlMaps = function (array $d) use ($tieneGps, $dirTexto): string {
 
         <div class="card portal-card">
             <h4 class="card-title"><?= icon('edit', 16) ?> Completar datos</h4>
+            <?php if ($bloqueado ?? false): ?>
+                <p class="card-subtitle">Este cliente tiene un crédito vigente — el nombre y la cédula no se pueden editar.</p>
+            <?php endif; ?>
             <form action="<?= base_url($base) ?>" method="post" class="form mt-4">
                 <?= csrf_field() ?>
                 <div class="form-group">
                     <label for="c-nombres">Nombres</label>
-                    <input type="text" id="c-nombres" name="nombres" maxlength="100" required
+                    <input type="text" id="c-nombres" name="nombres" maxlength="100" required <?= ($bloqueado ?? false) ? 'readonly' : '' ?>
                            value="<?= esc(old('nombres', $persona['nombres'] ?? '')) ?>">
                 </div>
                 <div class="form-group">
                     <label for="c-apellidos">Apellidos</label>
-                    <input type="text" id="c-apellidos" name="apellidos" maxlength="100" required
+                    <input type="text" id="c-apellidos" name="apellidos" maxlength="100" required <?= ($bloqueado ?? false) ? 'readonly' : '' ?>
                            value="<?= esc(old('apellidos', $persona['apellidos'] ?? '')) ?>">
                 </div>
                 <div class="form-group">
                     <label for="c-cedula">Cédula</label>
-                    <input type="text" id="c-cedula" name="cedula" maxlength="30"
+                    <input type="text" id="c-cedula" name="cedula" maxlength="30" <?= ($bloqueado ?? false) ? 'readonly' : '' ?>
                            value="<?= esc(old('cedula', $persona['cedula'] ?? '')) ?>">
                 </div>
                 <div class="form-group">

@@ -15,7 +15,14 @@
  */
 
 /** Cargo mensual por cada usuario activo por encima de `max_usuarios` del plan (USD). */
-defined('PLAN_USD_EXTRA_USUARIO') || define('PLAN_USD_EXTRA_USUARIO', 3.00);
+defined('PLAN_USD_EXTRA_USUARIO')  || define('PLAN_USD_EXTRA_USUARIO',  3.00);
+/** Cargo mensual por cada empleado/cobrador ACTIVO por encima de `max_empleados`. */
+defined('PLAN_USD_EXTRA_EMPLEADO') || define('PLAN_USD_EXTRA_EMPLEADO', 1.00);
+/** Cargo mensual por cada crédito ACTIVO/DESEMBOLSO por encima de `max_creditos_activos`. */
+defined('PLAN_USD_EXTRA_CREDITO')  || define('PLAN_USD_EXTRA_CREDITO',  0.15);
+/** Cargo mensual por cada cliente registrado por encima de la base (no hay columna en planes: base fija 20). */
+defined('PLAN_USD_EXTRA_CLIENTE')  || define('PLAN_USD_EXTRA_CLIENTE',  0.20);
+defined('PLAN_BASE_CLIENTES')      || define('PLAN_BASE_CLIENTES',      20);
 
 if (!function_exists('plan_actual')) {
 
@@ -59,9 +66,13 @@ if (!function_exists('plan_actual')) {
         if ($tid <= 0) return ['creditos' => 0, 'empleados' => 0, 'usuarios' => 0];
         $db = db_connect();
         return [
-            'creditos'  => (int) $db->table('solicitudes')->where('tenant_id', $tid)->where('estado', 'ACTIVO')->countAllResults(),
+            // "Activo o en cobro" = ACTIVO + DESEMBOLSO (términos del plan)
+            'creditos'  => (int) $db->table('solicitudes')->where('tenant_id', $tid)
+                                ->whereIn('estado', ['ACTIVO', 'DESEMBOLSO'])->countAllResults(),
             'empleados' => (int) $db->table('empleados')->where('tenant_id', $tid)->where('estado', 'ACTIVO')->countAllResults(),
-            'usuarios'  => (int) $db->table('users')->where('tenant_id', $tid)->where('estado', 'ACTIVO')->countAllResults(),
+            'usuarios'  => (int) $db->table('users')->where('tenant_id', $tid)->where('estado', 'ACTIVO')
+                                ->where('deleted_at IS NULL', null, false)->countAllResults(),
+            'clientes'  => (int) $db->table('clientes')->where('tenant_id', $tid)->where('estado', 'ACTIVO')->countAllResults(),
         ];
     }
 
@@ -93,7 +104,7 @@ if (!function_exists('plan_actual')) {
             return ['ok' => true, 'estado' => 'N/A', 'motivo' => '', 'proximo' => '', 'ultimo_pago' => null];
         }
         $db   = db_connect();
-        $t    = $db->table('tenants')->select('suscripcion_estado, dia_pago')->where('id', $tid)->get()->getRowArray() ?? [];
+        $t    = $db->table('tenants')->select('suscripcion_estado, dia_pago, gracia_dias')->where('id', $tid)->get()->getRowArray() ?? [];
         $plan = plan_actual($tid);
 
         // Plan gratis / sin plan contratado → siempre al día
@@ -116,46 +127,72 @@ if (!function_exists('plan_actual')) {
         if ($pago && $pago['estado'] === 'PAGADO') {
             return ['ok' => true, 'estado' => 'PAGADO', 'motivo' => '', 'proximo' => $proximo, 'ultimo_pago' => $ultimoStr];
         }
-        // Gracia: aún no llega el día de corte de este mes
-        $corte = date('Y-m-') . str_pad((string) min(28, max(1, (int) ($t['dia_pago'] ?? 10))), 2, '0', STR_PAD_LEFT);
+        // Gracia: corte = día de pago + días de gracia (fecha real — puede cruzar de mes)
+        $dia    = min(28, max(1, (int) ($t['dia_pago'] ?? 10)));
+        $gracia = max(0, (int) ($t['gracia_dias'] ?? 4));
+        $corte  = date('Y-m-d', strtotime(date('Y-m-') . str_pad((string) $dia, 2, '0', STR_PAD_LEFT) . " +{$gracia} days"));
         if (date('Y-m-d') <= $corte) {
-            return ['ok' => true, 'estado' => 'PENDIENTE', 'motivo' => 'Pago del período pendiente (corte: ' . $corte . ').',
+            return ['ok' => true, 'estado' => 'PENDIENTE', 'motivo' => 'Pago del período pendiente (día ' . $dia . ' + ' . $gracia . 'd de gracia → ' . $corte . ').',
                     'proximo' => $proximo, 'ultimo_pago' => $ultimoStr];
         }
         return ['ok' => false, 'estado' => 'VENCIDA',
-                'motivo' => 'Suscripción vencida — no se registró el pago del período ' . $periodo . '.',
+                'motivo' => 'Suscripción vencida — no se registró el pago del período ' . $periodo . ' (venció el ' . $corte . ').',
                 'proximo' => $proximo, 'ultimo_pago' => $ultimoStr];
     }
 
     /**
-     * Desglose del cobro mensual del tenant: precio del plan + usuarios
-     * extra (cada usuario ACTIVO por encima de `planes.max_usuarios`
-     * suma PLAN_USD_EXTRA_USUARIO). -1 en el plan = sin cargo extra.
+     * Desglose del cobro mensual del tenant: precio del plan + sobreconsumo
+     * de los 4 conceptos (usuarios, empleados, créditos activos, clientes).
+     * Las llaves extra/monto_extra/precio_extra quedan apuntando a usuarios
+     * por compatibilidad con UsuarioController y TenantService.
+     *
      * @return array{plan:?string, precio:float, moneda:string, usuarios:int,
-     *               incluidos:int, extra:int, monto_extra:float, total:float}
+     *               incluidos:int, extra:int, precio_extra:float, monto_extra:float,
+     *               recursos:array, total:float}
      */
     function plan_cobro_mes(int $tenantId): array
     {
-        $plan = plan_actual($tenantId);
-        $precio   = (float) ($plan['precio_mensual'] ?? 0);
-        $incluidos = (int) ($plan['max_usuarios'] ?? -1);
-        $usuarios = (int) db_connect()->table('users')
-            ->where('tenant_id', $tenantId)->where('estado', 'ACTIVO')
-            ->where('deleted_at IS NULL', null, false)->countAllResults();
+        $plan   = plan_actual($tenantId);
+        $precio = (float) ($plan['precio_mensual'] ?? 0);
+        $uso    = plan_uso($tenantId);
 
-        $extra = $incluidos >= 0 ? max(0, $usuarios - $incluidos) : 0;
-        $montoExtra = $extra * PLAN_USD_EXTRA_USUARIO;
+        // concepto => [uso, incluido (-1 = ilimitado), tarifa extra]
+        $defs = [
+            'usuarios'  => ['Usuarios del sistema', (int) ($plan['max_usuarios'] ?? -1),         PLAN_USD_EXTRA_USUARIO],
+            'empleados' => ['Empleados / cobradores', (int) ($plan['max_empleados'] ?? -1),       PLAN_USD_EXTRA_EMPLEADO],
+            'creditos'  => ['Créditos activos',       (int) ($plan['max_creditos_activos'] ?? -1), PLAN_USD_EXTRA_CREDITO],
+            'clientes'  => ['Clientes registrados',   PLAN_BASE_CLIENTES,                         PLAN_USD_EXTRA_CLIENTE],
+        ];
+
+        $recursos = [];
+        $totalExtra = 0.0;
+        foreach ($defs as $key => [$label, $incluido, $tarifa]) {
+            $cant   = (int) ($uso[$key] ?? 0);
+            $extra  = $incluido >= 0 ? max(0, $cant - $incluido) : 0;
+            $monto  = round($extra * $tarifa, 2);
+            $totalExtra += $monto;
+            $recursos[$key] = [
+                'label'    => $label,
+                'uso'      => $cant,
+                'incluido' => $incluido,
+                'extra'    => $extra,
+                'tarifa'   => $tarifa,
+                'monto'    => $monto,
+            ];
+        }
 
         return [
-            'plan'        => $plan['nombre'] ?? null,
-            'precio'      => $precio,
-            'moneda'      => $plan['moneda'] ?? 'USD',
-            'usuarios'    => $usuarios,
-            'incluidos'   => $incluidos,
-            'extra'       => $extra,
+            'plan'         => $plan['nombre'] ?? null,
+            'precio'       => $precio,
+            'moneda'       => $plan['moneda'] ?? 'USD',
+            'usuarios'     => $recursos['usuarios']['uso'],
+            'incluidos'    => $recursos['usuarios']['incluido'],
+            'extra'        => $recursos['usuarios']['extra'],
             'precio_extra' => PLAN_USD_EXTRA_USUARIO,
-            'monto_extra' => $montoExtra,
-            'total'       => round($precio + $montoExtra, 2),
+            'monto_extra'  => $recursos['usuarios']['monto'],
+            'recursos'     => $recursos,
+            'monto_extras' => round($totalExtra, 2),
+            'total'        => round($precio + $totalExtra, 2),
         ];
     }
 
