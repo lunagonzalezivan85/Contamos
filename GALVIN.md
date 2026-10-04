@@ -44,3 +44,33 @@ pueda ejecutar las pruebas sobre cada cambio.
   fase, la más reciente va arriba.
 - Si hubo cambio de esquema → `.sql` en `writable/migraciones_sql/` y avisar para
   correr `.\sync-bd.ps1`.
+
+## Credenciales del server — ⚠️ BORRAR ESTA SECCIÓN TRAS COPIARLAS
+
+> Copiá estos datos a tu máquina (config local / notas seguras) y **eliminá esta
+> sección completa del archivo antes de commitear**. Es solo para que tengás los
+> accesos la primera vez — no deben quedar escritos en el repo.
+
+**FTP — subida de archivos (`deploy.ps1`)**
+
+| Dato | Valor |
+|---|---|
+| Host | `win8166.site4now.net` |
+| Usuario | `ftpcontamos` |
+| Clave | `$Easy2023` |
+| Carpeta remota | `/contamos` |
+
+**MySQL remoto — sync de esquema (`sync-bd.ps1`)**
+
+| Dato | Valor |
+|---|---|
+| Host | `mysql8001.site4now.net` |
+| Usuario | `aa03a4_actas` |
+| Clave | `easy2023` |
+| Base de datos | `db_aa03a4_actas` |
+| Prefijo de tablas | `CT_` |
+
+Ojo: el server corre **MySQL 5.7** (local es MariaDB 10.4) — `bigint(20)` ≡
+`bigint`, solo cambia el display width. Credenciales **locales** (XAMPP, DB
+`cfsi` sin prefijo): `admin` / `galvin` / `admin-ce` → `admin123`; panel admin
+`admin@cfsi.dev / admin123`.
