@@ -141,3 +141,6 @@ _modules/*
 public/app/*.apk
 /tmp/
 /AndroidManifest.xml
+
+# Sello local del ultimo deploy (estado por maquina)
+.deploy-stamp

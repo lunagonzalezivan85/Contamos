@@ -14,10 +14,10 @@ param(
 )
 
 # ================= CONFIG =================
-$FtpHost   = "ftp://contamos.softlutionic.com"
-$FtpUser   = "actas_maria"
-$FtpPass   = "easy2023"
-$RemoteDir = "/"          # carpeta remota donde vive el proyecto (sin / al final, "" = raíz)
+$FtpHost   = "win8166.site4now.net"
+$FtpUser   = "ftpcontamos"
+$FtpPass   = "$Easy2023"
+$RemoteDir = "/contamos"          # carpeta remota donde vive el proyecto (sin / al final, "" = raíz)
 # ==========================================
 
 $root   = $PSScriptRoot
