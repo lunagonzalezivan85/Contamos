@@ -96,7 +96,8 @@ class Menu extends BaseConfig
             'icono'  => 'credit-card',
             'url'    => null,
             'children' => [
-                ['nombre' => 'Solicitud', 'icono' => 'file-text',   'url' => '/credito/solicitudes', 'permiso' => 'solicitudes.ver'],
+                ['nombre' => 'Solicitud',  'icono' => 'file-text',   'url' => '/credito/solicitudes', 'permiso' => 'solicitudes.ver'],
+                ['nombre' => 'Desembolsar', 'icono' => 'map-pin',    'url' => '/credito/desembolsar', 'permiso' => 'solicitudes.desembolsar'],
                 ['nombre' => 'Créditos',  'icono' => 'credit-card', 'url' => '/creditos',            'permiso' => 'creditos.ver'],
                 ['nombre' => 'Cartera',   'icono' => 'briefcase',   'url' => '/credito/cartera',     'permiso' => 'creditos.ver'],
                 ['nombre' => 'Reporte',   'icono' => 'bar-chart-2', 'url' => '/credito/reporte',     'permiso' => 'reportes.ver'],

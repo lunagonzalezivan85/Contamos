@@ -181,6 +181,9 @@ $routes->group('', ['filter' => ['auth', 'suscripcion', 'horario'], 'namespace' 
     $routes->post('socios/clientes/(:num)/dato/(:segment)/(:num)/actualizar', 'ClienteController::actualizarDato/$1/$2/$3', ['filter' => 'auth:clientes.editar']);
     $routes->post('socios/clientes/(:num)/dato/(:segment)/(:num)/eliminar', 'ClienteController::eliminarDato/$1/$2/$3', ['filter' => 'auth:clientes.editar']);
 
+    // Desembolsos pendientes — ruta de entrega con mapa y reorden
+    $routes->get('credito/desembolsar', 'SolicitudController::desembolsos', ['filter' => 'auth:solicitudes.desembolsar']);
+
     // Crédito — Solicitudes
     $routes->get('credito/solicitudes', 'SolicitudController::index', ['filter' => 'auth:solicitudes.ver']);
 $routes->get('credito/solicitudes/nueva', 'SolicitudController::nueva', ['filter' => 'auth:solicitudes.crear']);

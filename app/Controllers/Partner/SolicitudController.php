@@ -56,6 +56,22 @@ class SolicitudController extends BaseController
         ]);
     }
 
+    /** GET /credito/desembolsar — ruta de entrega de los desembolsos pendientes (lista + mapa). */
+    public function desembolsos()
+    {
+        $tenantId = (int) session('tenant_id');
+        $data     = $this->svc->desembolsosRuta($tenantId);
+
+        return view('partner/solicitudes/desembolsos', [
+            'title'    => 'Desembolsos — Contamos',
+            'paradas'  => $data['paradas'],
+            'total'    => $data['total'],
+            'con_gps'  => $data['con_gps'],
+            'gestores' => $data['gestores'],
+            'mon'      => $this->svc->moneda($tenantId),
+        ]);
+    }
+
     /** GET /credito/solicitudes/nueva — alta desde oficina. */
     public function nueva()
     {

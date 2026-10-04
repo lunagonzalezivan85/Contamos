@@ -4,6 +4,13 @@ Registro de cambios por sesión. Más reciente arriba.
 
 ---
 
+## 2026-10-04 — Ruta de desembolsos en panel tenant
+
+- **`GET /credito/desembolsar`** — nueva opción «Desembolsar» en el menú Crédito (permiso `solicitudes.desembolsar`, icono map-pin). Lista todas las solicitudes en estado DESEMBOLSO del tenant (todos los gestores) con monto aprobado, fecha de entrega, gestor asignado y mejor dirección del cliente (GPS preferido — mismo criterio que `rutaCobrosHoy`/`desembolsosPendientes` del portal). `SolicitudService::desembolsosRuta` devuelve paradas + total + conteo sin GPS + gestores presentes.
+- **Mapa con ruta reorganizable** — botón «Ver mapa» despliega MapLibre (mismo estilo OpenFreeMap que ruta de cobro y ficha de cliente); markers numerados por posición en la ruta; «Mi ubicación» (geolocation) y «Orden sugerido» (vecino más cercano desde el GPS, sin GPS al final); cada parada se mueve con flechas ▲▼ y la ruta se recalcula. Línea por calles vía OSRM con fallback a línea recta; distancias de lista = haversine desde la parada anterior. Links Waze / Google Maps / WhatsApp por parada; click en el nombre abre el detalle de la solicitud.
+- **Filtros** — modal «Elegir entregas» (checkboxes por solicitud) + select por gestor cuando hay más de uno; ambos solo filtran la vista, no tocan datos.
+- **Archivos**: `SolicitudService::desembolsosRuta`, `SolicitudController::desembolsos`, ruta en `Routes.php`, ítem en `Menu.php`, vista `partner/solicitudes/desembolsos.php`, `public/js/desembolsos.js`, bloque `.ruta-*`/`.map-*`/`.ruta-mv` en `app.css` (reuso del patrón `portal/mapa.js` con reorden manual agregado).
+
 ## 2026-10-01 (noche) — Fix paginador + entrada app en 2 pasos + /alta con calculadora
 
 - **Fix crítico `partials/pager.php`** — usaba métodos inexistentes en `PagerRenderer` (`getCurrentPage()`, `getPreviousPage()`, `getNextPage()` como URL). Corregido a `getCurrent()` / `getPrevious()` / `getNext()`; `getTotal()` tras `method_exists`. Era el 500 de `/portal/actividad` (solo con >1 página) — afectaba toda lista paginada.

@@ -591,6 +591,84 @@ class SolicitudService
     }
 
     /**
+     * Desembolsos pendientes del tenant para la ruta de entrega
+     * (/credito/desembolsar): una parada por solicitud en DESEMBOLSO con la
+     * mejor dirección del cliente (GPS primero) y su gestor asignado.
+     * @return array{paradas: array, total: float, con_gps: int, gestores: array}
+     */
+    public function desembolsosRuta(int $tenantId): array
+    {
+        $rows = $this->solicitudes
+            ->select('solicitudes.id, solicitudes.cliente_id, solicitudes.asignado_a,
+                      solicitudes.monto, solicitudes.monto_aprobado, solicitudes.fecha_desembolso,
+                      solicitudes.destino, personas.nombres, personas.apellidos, personas.telefono,
+                      clientes.codigo, clientes.persona_id,
+                      pg.nombres AS gestor_nombres, pg.apellidos AS gestor_apellidos')
+            ->join('clientes', 'clientes.id = solicitudes.cliente_id')
+            ->join('personas', 'personas.id = clientes.persona_id')
+            ->join('empleados e', 'e.id = solicitudes.asignado_a', 'left')
+            ->join('personas pg', 'pg.id = e.persona_id', 'left')
+            ->where('solicitudes.tenant_id', $tenantId)
+            ->where('solicitudes.estado', SolicitudModel::DESEMBOLSO)
+            ->orderBy('solicitudes.fecha_desembolso', 'ASC')
+            ->orderBy('solicitudes.id', 'ASC')
+            ->findAll();
+
+        if (!$rows) {
+            return ['paradas' => [], 'total' => 0.0, 'con_gps' => 0, 'gestores' => []];
+        }
+
+        // Mejor dirección por persona — preferir la que tenga GPS guardado
+        $perIds = array_values(array_filter(array_column($rows, 'persona_id')));
+        $dirPorPersona = [];
+        if ($perIds) {
+            $dirs = (new PersonaDetalleModel('direccion'))
+                ->whereIn('persona_id', $perIds)
+                ->orderBy('(latitud IS NOT NULL)', 'DESC', false)
+                ->orderBy('id', 'DESC')
+                ->findAll();
+            foreach ($dirs as $d) {
+                $dirPorPersona[$d['persona_id']] ??= $d;
+            }
+        }
+
+        $paradas  = [];
+        $gestores = [];
+        foreach ($rows as $s) {
+            $dir = $dirPorPersona[$s['persona_id']] ?? null;
+            $lat = $dir['latitud']  ?? null;
+            $lng = $dir['longitud'] ?? null;
+            $gestor = trim(($s['gestor_nombres'] ?? '') . ' ' . ($s['gestor_apellidos'] ?? ''));
+            if ($gestor !== '') {
+                $gestores[(int) $s['asignado_a']] = $gestor;
+            }
+            $paradas[] = [
+                'sol_id'     => (int) $s['id'],
+                'cliente_id' => (int) $s['cliente_id'],
+                'nombre'     => trim($s['nombres'] . ' ' . $s['apellidos']),
+                'telefono'   => (string) ($s['telefono'] ?? ''),
+                'codigo'     => $s['codigo'] ?: ('#' . $s['id']),
+                'monto'      => round((float) ($s['monto_aprobado'] ?: $s['monto']), 2),
+                'fecha'      => (string) ($s['fecha_desembolso'] ?? ''),
+                'gestor_id'  => (int) ($s['asignado_a'] ?? 0),
+                'gestor'     => $gestor !== '' ? $gestor : 'Sin asignar',
+                'lat'        => is_numeric($lat) ? (float) $lat : null,
+                'lng'        => is_numeric($lng) ? (float) $lng : null,
+                'dir'        => $dir ? trim(implode(', ', array_filter([
+                    $dir['barrio'] ?? '', $dir['ciudad'] ?? '', $dir['departamento'] ?? '']))) : '',
+                'detalle'    => trim((string) ($dir['detalle'] ?? '')),
+            ];
+        }
+
+        return [
+            'paradas'  => $paradas,
+            'total'    => round(array_sum(array_column($paradas, 'monto')), 2),
+            'con_gps'  => count(array_filter($paradas, static fn ($p) => $p['lat'] !== null)),
+            'gestores' => $gestores,   // empleado_id => nombre
+        ];
+    }
+
+    /**
      * Calcula y persiste el análisis financiero de la solicitud.
      * @return array{ok: bool, nivel?: string, error?: string}
      */
