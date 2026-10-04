@@ -435,7 +435,7 @@ class PortalService
             return ['ok' => false, 'error' => 'El monto mínimo a prestar es 1,000.'];
         }
         $plazoMax = (int) ($tenant['plazo_meses_max'] ?? 0);
-        $plazo    = ($d['plazo_meses'] ?? '') !== '' ? (int) $d['plazo_meses'] : null;
+        $plazo    = ($d['plazo_meses'] ?? '') !== '' ? (float) $d['plazo_meses'] : null;
         if ($plazo !== null && $plazoMax > 0 && $plazo > $plazoMax) {
             return ['ok' => false, 'error' => "El plazo máximo permitido es {$plazoMax} meses."];
         }

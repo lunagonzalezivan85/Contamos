@@ -23,7 +23,7 @@
             </div>
             <div class="form-group">
                 <label>Plazo (meses)</label>
-                <input type="number" id="c-plazo" min="1" max="<?= (int) $plazoMax ?>" value="6">
+                <input type="number" id="c-plazo" min="0.5" max="<?= (int) $plazoMax ?>" step="0.5" value="6">
             </div>
             <div class="form-group">
                 <label>Cuotas por mes</label>
@@ -94,7 +94,7 @@
 
     function calc() {
         const P  = parseFloat(monto.value) || 0;
-        const pm = parseInt(plazo.value) || 0;
+        const pm = parseFloat(plazo.value) || 0;
         const f  = parseInt(frec.value) || 4;
         const tm = (parseFloat(tasa.value) || 0) / 100;
         const n  = pm * f;                       // número de pagos

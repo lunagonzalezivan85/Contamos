@@ -77,7 +77,7 @@ $monedaJs = esc($mon, 'js');
                     </div>
                     <div class="form-group">
                         <label for="ap_plazo">Plazo (meses, máx <?= (int) $plazoMax ?>) *</label>
-                        <input type="number" id="ap_plazo" name="plazo_aprobado" min="1" max="<?= (int) $plazoMax ?>" required
+                        <input type="number" id="ap_plazo" name="plazo_aprobado" min="0.5" max="<?= (int) $plazoMax ?>" step="0.5" required
                                value="<?= esc(old('plazo_aprobado', $s['plazo_meses'] ?: $plazoMax)) ?>">
                     </div>
                     <div class="form-group">
@@ -187,7 +187,7 @@ $monedaJs = esc($mon, 'js');
               : freq.value === 'P' ? 30 / Math.max(1, parseInt(paso.value) || 15)
               : (freqPagos[freq.value] || 1);
         var iP  = (parseFloat(tasa.value) || 0) / 100 / Math.max(pxm, 0.01);
-        var n   = Math.max(1, Math.round((parseInt(plazo.value) || 1) * pxm));
+        var n   = Math.max(1, Math.round((parseFloat(plazo.value) || 1) * pxm));
         var M   = parseFloat(monto.value) || 0;
         var cuota;
         if (tipo.value === 'ALEMAN') {

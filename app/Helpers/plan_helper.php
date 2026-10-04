@@ -213,3 +213,26 @@ if (!function_exists('plan_actual')) {
         return $corte->format('Y-m-d');
     }
 }
+
+if (!function_exists('en_horario')) {
+    /**
+     * Horario laboral del tenant — portal gestor + app móvil.
+     * tenants.hora_inicio / hora_fin (TIME). Sin rango = sin restricción.
+     * Soporta rangos que cruzan medianoche (p.ej. 20:00–06:00).
+     * @return array{ok: bool, ini: string, fin: string}
+     */
+    function en_horario(array $tenant): array
+    {
+        $ini = (string) ($tenant['hora_inicio'] ?? '');
+        $fin = (string) ($tenant['hora_fin'] ?? '');
+        $out = ['ok' => true, 'ini' => substr($ini, 0, 5), 'fin' => substr($fin, 0, 5)];
+        if (!$ini || !$fin) {
+            return $out;
+        }
+        $ahora = date('H:i:s');
+        $out['ok'] = $ini <= $fin
+            ? ($ahora >= $ini && $ahora <= $fin)   // mismo día
+            : ($ahora >= $ini || $ahora <= $fin); // cruza medianoche
+        return $out;
+    }
+}

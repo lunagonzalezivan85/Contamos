@@ -47,8 +47,8 @@
 
         <div class="calc-field">
             <div class="calc-field-head"><label for="plazo_meses">Plazo (meses)</label></div>
-            <input type="number" class="calc-num" id="plazo_meses" name="plazo_meses" min="1"
-                   max="<?= (int) ($tenant['plazo_meses_max'] ?? 60) ?>" step="1" inputmode="numeric"
+            <input type="number" class="calc-num" id="plazo_meses" name="plazo_meses" min="0.5"
+                   max="<?= (int) ($tenant['plazo_meses_max'] ?? 60) ?>" step="0.5" inputmode="decimal"
                    value="<?= esc(old('plazo_meses', $s['plazo_meses'])) ?>">
         </div>
 

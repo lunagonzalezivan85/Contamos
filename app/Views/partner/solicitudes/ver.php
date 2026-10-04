@@ -9,12 +9,16 @@ $cliente  = trim($s['nombres'] . ' ' . $s['apellidos']);
 $creador  = trim(($s['creador_nombres'] ?? '') . ' ' . ($s['creador_apellidos'] ?? ''));
 $gestor   = trim(($s['gestor_nombres'] ?? '') . ' ' . ($s['gestor_apellidos'] ?? ''));
 
-// Cuota estimada (mismo cálculo que el wizard — sistema francés por período)
+// Cuota estimada (mismo cálculo que el wizard — según tipo_calculo)
 $freqPagos  = ['D' => 30, 'DI' => 0, 'S' => 4, 'Q' => 2, 'M' => 1];
 $pagosXmes  = $s['frecuencia'] === 'DI' ? 4 * (int) ($s['dias_semana'] ?? 3) : ($freqPagos[$s['frecuencia']] ?? 1);
 $iP         = ((float) ($s['tasa_mensual'] ?? 0) / 100) / max($pagosXmes, 0.01);
-$n          = max(1, round(((int) ($s['plazo_meses'] ?? 0)) * $pagosXmes));
-$cuota      = $iP > 0 ? $s['monto'] * $iP * (1 + $iP) ** $n / ((1 + $iP) ** $n - 1) : ($s['monto'] / $n);
+$n          = max(1, round(((float) ($s['plazo_meses'] ?? 0)) * $pagosXmes));
+$cuota      = match ($s['tipo_calculo'] ?? 'FRANCES') {
+    'FLAT', 'ALEMAN' => $n > 0 ? $s['monto'] / $n + $s['monto'] * $iP : 0,   // alemán: 1ra (la mayor)
+    'ANTICIPADO'     => $n > 0 ? $s['monto'] / $n : 0,                       // capital puro
+    default          => $iP > 0 ? $s['monto'] * $iP * (1 + $iP) ** $n / ((1 + $iP) ** $n - 1) : ($s['monto'] / $n),
+};
 $freqTxt    = ($lblFreq[$s['frecuencia']] ?? $s['frecuencia']) . ($s['frecuencia'] === 'DI' ? ' (' . (int) $s['dias_semana'] . ' días/sem)' : '');
 ?>
 
@@ -152,7 +156,7 @@ if ($editable ?? false) {
         <div class="detail-grid mt-3">
             <div><label>Monto</label><p><strong><?= esc($mon) ?> <?= number_format((float) $s['monto'], 2) ?></strong></p></div>
             <div><label>Tasa mensual</label><p><?= number_format((float) ($s['tasa_mensual'] ?? 0), 2) ?>%</p></div>
-            <div><label>Plazo</label><p><?= esc($s['plazo_meses'] ?: '—') ?> <?= $s['plazo_meses'] ? 'meses' : '' ?></p></div>
+            <div><label>Plazo</label><p><?= esc((float) ($s['plazo_meses'] ?? 0) ?: '—') ?> <?= $s['plazo_meses'] ? 'meses' : '' ?></p></div>
             <div><label>Frecuencia</label><p><?= esc($freqTxt) ?></p></div>
             <div><label>Cuota estimada</label><p><strong><?= esc($mon) ?> <?= number_format($cuota, 2) ?></strong> × <?= $n ?> pagos</p></div>
             <div><label>Destino</label><p><?= esc($s['destino'] ?? '—') ?></p></div>
@@ -163,7 +167,7 @@ if ($editable ?? false) {
                 <div class="detail-grid">
                     <div><label>Monto</label><p><strong><?= esc($mon) ?> <?= number_format((float) $s['monto_aprobado'], 2) ?></strong></p></div>
                     <div><label>Tasa mensual</label><p><?= number_format((float) $s['tasa_aprobada'], 2) ?>%</p></div>
-                    <div><label>Plazo</label><p><?= (int) $s['plazo_aprobado'] ?> meses</p></div>
+                    <div><label>Plazo</label><p><?= (float) $s['plazo_aprobado'] ?> meses</p></div>
                     <div><label>Frecuencia</label><p><?= esc($lblFreq[$s['frecuencia_aprobada']] ?? $s['frecuencia_aprobada']) ?></p></div>
                     <div><label>Primer pago</label><p><strong><?= esc($s['fecha_primer_pago'] ?? '—') ?></strong></p></div>
                     <div><label>Desembolso</label><p><?= esc($s['fecha_desembolso'] ?? '—') ?></p></div>

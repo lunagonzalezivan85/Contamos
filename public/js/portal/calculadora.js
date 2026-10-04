@@ -47,7 +47,7 @@
     function calcular() {
         var P     = parseFloat(monto.value) || 0;
         var i     = Math.min(parseFloat(tasa.value) || 0, TASA_MAX) / 100;   // tope tenant
-        var meses = parseInt(plazo.value, 10) || 0;
+        var meses = parseFloat(plazo.value) || 0;
         var dias  = parseInt(diasIn.value, 10) || 3;          // solo diario intermitente
 
         var pagosPorMes = freq === 'DI' ? (4 * dias) : freqInfo[freq].pagosPorMes;
@@ -142,7 +142,7 @@
     function verPlan() {
         var P     = parseFloat(monto.value) || 0;
         var i     = Math.min(parseFloat(tasa.value) || 0, TASA_MAX) / 100;
-        var meses = parseInt(plazo.value, 10) || 0;
+        var meses = parseFloat(plazo.value) || 0;
         var dias  = parseInt(diasIn.value, 10) || 3;
         var ppm   = freq === 'DI' ? 4 * dias : freqInfo[freq].pagosPorMes;
         var iP    = i / ppm;

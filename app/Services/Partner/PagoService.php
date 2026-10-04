@@ -396,7 +396,7 @@ class PagoService
         // 2) Nuevos términos del crédito
         $terms = [
             'tasa_aprobada'       => (float) ($d['tasa_aprobada'] ?? $sol['tasa_aprobada']),
-            'plazo_aprobado'      => max(1, (int) ($d['plazo_aprobado'] ?? $sol['plazo_aprobado'])),
+            'plazo_aprobado'      => max(0.5, (float) ($d['plazo_aprobado'] ?? $sol['plazo_aprobado'])),
             'frecuencia_aprobada' => (string) ($d['frecuencia_aprobada'] ?? $sol['frecuencia_aprobada']),
             'fecha_primer_pago'   => $fechaPrimer,
         ];
@@ -442,7 +442,7 @@ class PagoService
             'asignado_a'    => $sol['asignado_a'],
             'ruta'          => $sol['ruta'],
             'monto'         => $monto > 0 ? $monto : $this->saldoCredito($sol),
-            'plazo_meses'   => (int) ($d['plazo_meses'] ?? $sol['plazo_aprobado'] ?: $sol['plazo_meses']),
+            'plazo_meses'   => (float) ($d['plazo_meses'] ?? $sol['plazo_aprobado'] ?: $sol['plazo_meses']),
             'frecuencia'    => (string) ($d['frecuencia'] ?? $sol['frecuencia_aprobada'] ?? $sol['frecuencia'] ?? 'M'),
             'tasa_mensual'  => ($d['tasa_mensual'] ?? '') !== ''
                 ? (float) $d['tasa_mensual'] : (float) ($sol['tasa_aprobada'] ?? $sol['tasa_mensual']),

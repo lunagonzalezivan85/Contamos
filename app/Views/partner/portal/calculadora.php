@@ -62,7 +62,7 @@
             <label>Plazo del préstamo</label>
             <output class="calc-val" id="calc-plazo-lbl">12 meses</output>
         </div>
-        <input type="number" class="calc-num" id="calc-plazo" min="3" max="60" step="1" inputmode="numeric" value="12">
+        <input type="number" class="calc-num" id="calc-plazo" min="0.5" max="60" step="0.5" inputmode="decimal" value="12">
     </div>
 
     <!-- Frecuencia de pago -->

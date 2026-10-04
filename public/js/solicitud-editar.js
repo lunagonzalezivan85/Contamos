@@ -34,7 +34,7 @@
         var f    = freq();
         var P    = parseFloat(monto.value) || 0;
         var t    = parseFloat(tasa.value)  || 0;
-        var mes  = parseInt(plazo.value, 10) || 0;
+        var mes  = parseFloat(plazo.value) || 0;
         var dSem = parseInt(dias.value, 10)  || 3;
 
         // ocultar días si no es intermitente

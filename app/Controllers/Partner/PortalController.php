@@ -43,9 +43,7 @@ class PortalController extends BaseController
             return redirect()->to('/')->with('error', 'Empresa no encontrada.');
         }
         if ($this->portal->sesionGestorActiva($tenant)) {
-            return plan_al_dia((int) $tenant['id'])['ok']
-                ? redirect()->to('/' . $slug . '/portal/panel')
-                : redirect()->to('/' . $slug . '/portal/suspendida');
+            return $this->destinoGestor($slug, $tenant);
         }
         return view('partner/portal/login', [
             'title'  => $tenant['nombre'] . ' - Portal de gestores',
@@ -80,10 +78,41 @@ class PortalController extends BaseController
             'portal_tenant_id'   => (int) $tenant['id'],
         ]);
 
+        return $this->destinoGestor($slug, $tenant);
+    }
+
+    /** Destino tras login o al re-entrar logueado: suspendida → horario → panel. */
+    private function destinoGestor(string $slug, array $tenant)
+    {
         if (!plan_al_dia((int) $tenant['id'])['ok']) {
             return redirect()->to('/' . $slug . '/portal/suspendida');
         }
+        if (!en_horario($tenant)['ok']) {
+            return redirect()->to('/' . $slug . '/portal/horario');
+        }
         return redirect()->to('/' . $slug . '/portal/panel');
+    }
+
+    /** GET /{slug}/portal/horario — bloqueo fuera del horario laboral (la sesión sigue activa). */
+    public function horario(string $slug)
+    {
+        $tenant = $this->portal->tenantPorSlug($slug);
+        if (!$tenant) {
+            return redirect()->to('/')->with('error', 'Empresa no encontrada.');
+        }
+        if (!$this->portal->sesionGestorActiva($tenant)) {
+            return redirect()->to('/' . $slug . '/portal/login');
+        }
+        $h = en_horario($tenant);
+        if ($h['ok']) {
+            return redirect()->to('/' . $slug . '/portal/panel');
+        }
+        return view('partner/portal/horario', [
+            'title'  => 'Fuera de horario',
+            'tenant' => $tenant,
+            'slug'   => $slug,
+            'h'      => $h,
+        ]);
     }
 
     /** GET /{slug}/portal/suspendida — suscripción del tenant vencida. */
@@ -600,6 +629,10 @@ class PortalController extends BaseController
         // Plan vencido → bloquear todas las secciones del gestor.
         // Los callers redirigen a /portal/login, que reenvía a /portal/suspendida.
         if ($ctx && !plan_al_dia((int) $ctx[0]['id'])['ok']) {
+            return null;
+        }
+        // Fuera de horario → igual: login reenvía a /portal/horario.
+        if ($ctx && !en_horario($ctx[0])['ok']) {
             return null;
         }
         return $ctx;

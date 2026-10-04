@@ -208,7 +208,7 @@ class SolicitudController extends BaseController
         if (!$this->validate([
             'monto_aprobado'      => 'required|numeric|greater_than[0]',
             'tasa_aprobada'       => 'required|numeric|greater_than_equal_to[0]',
-            'plazo_aprobado'      => 'required|integer|greater_than_equal_to[1]',
+            'plazo_aprobado'      => 'required|numeric|greater_than_equal_to[0.5]',
             'frecuencia_aprobada' => 'required|in_list[D,DI,S,Q,M,P]',
             'dias_semana'         => 'permit_empty|integer|greater_than_equal_to[1]|less_than_equal_to[7]',
             'paso_dias'           => 'permit_empty|integer|greater_than_equal_to[1]|less_than_equal_to[365]',
@@ -384,7 +384,7 @@ class SolicitudController extends BaseController
         if (!$this->validate([
             'monto'        => 'required|numeric|greater_than[0]',
             'tasa_mensual' => 'permit_empty|numeric|greater_than_equal_to[0]',
-            'plazo_meses'  => 'permit_empty|integer|greater_than_equal_to[1]',
+            'plazo_meses'  => 'permit_empty|numeric|greater_than_equal_to[0.5]',
             'frecuencia'   => 'required|in_list[D,DI,S,Q,M]',
             'dias_semana'  => 'permit_empty|integer|greater_than_equal_to[1]|less_than_equal_to[7]',
             'destino'      => 'permit_empty|max_length[255]',

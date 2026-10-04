@@ -53,7 +53,7 @@ $neto  = round((float) $s['monto_aprobado'] - array_sum($deduc), 2);
                 <div class="detail-grid mt-3">
                     <div><label>Monto aprobado</label><p><strong><?= esc($mon) ?> <?= number_format((float) $s['monto_aprobado'], 2) ?></strong></p></div>
                     <div><label>Tasa mensual</label><p><?= number_format((float) ($s['tasa_aprobada'] ?? 0), 2) ?>%</p></div>
-                    <div><label>Plazo</label><p><?= (int) $s['plazo_aprobado'] ?> meses</p></div>
+                    <div><label>Plazo</label><p><?= (float) $s['plazo_aprobado'] ?> meses</p></div>
                     <div><label>Frecuencia</label><p><?= esc($freqAprob) ?></p></div>
                     <div><label>Cuota</label><p><?= esc($mon) ?> <?= number_format($cuotaA, 2) ?> × <?= $nA ?> pagos</p></div>
                     <div><label>Primer pago</label><p><strong><?= esc($s['fecha_primer_pago'] ?? '—') ?></strong></p></div>

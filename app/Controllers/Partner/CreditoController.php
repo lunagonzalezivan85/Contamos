@@ -113,7 +113,7 @@ class CreditoController extends BaseController
     {
         if (!$this->validate([
             'tasa_aprobada'       => 'required|numeric|greater_than_equal_to[0]',
-            'plazo_aprobado'      => 'required|integer|greater_than_equal_to[1]',
+            'plazo_aprobado'      => 'required|numeric|greater_than_equal_to[0.5]',
             'frecuencia_aprobada' => 'required|in_list[D,DI,S,Q,M,P]',
             'tipo_calculo'        => 'permit_empty|in_list[FRANCES,FLAT,ALEMAN,ANTICIPADO]',
             'paso_dias'           => 'permit_empty|integer|greater_than_equal_to[1]|less_than_equal_to[365]',
@@ -137,7 +137,7 @@ class CreditoController extends BaseController
     {
         if (!$this->validate([
             'monto'        => 'permit_empty|numeric|greater_than[0]',
-            'plazo_meses'  => 'permit_empty|integer|greater_than_equal_to[1]',
+            'plazo_meses'  => 'permit_empty|numeric|greater_than_equal_to[0.5]',
             'tasa_mensual' => 'permit_empty|numeric|greater_than_equal_to[0]',
             'frecuencia'   => 'permit_empty|in_list[D,DI,S,Q,M,P]',
             'tipo_calculo' => 'permit_empty|in_list[FRANCES,FLAT,ALEMAN,ANTICIPADO]',

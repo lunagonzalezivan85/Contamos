@@ -31,6 +31,7 @@ $routes->get('(:segment)/asistencia',    'Partner\AsistenciaController::kiosco/$
 $routes->get('(:segment)/asistencia/pin-longitud', 'Partner\AsistenciaController::pinLongitud/$1');
 $routes->post('(:segment)/asistencia',   'Partner\AsistenciaController::marcar/$1');
 $routes->get('(:segment)/portal/suspendida', 'Partner\PortalController::suspendida/$1'); // plan vencido
+$routes->get('(:segment)/portal/horario', 'Partner\PortalController::horario/$1');     // fuera de horario laboral
 $routes->get('(:segment)/portal/panel',  'Partner\PortalController::panel/$1');    // app del gestor
 $routes->get('(:segment)/portal/perfil', 'Partner\PortalController::perfil/$1');   // perfil del gestor
 $routes->get('(:segment)/portal/salir',  'Partner\PortalController::salir/$1');

@@ -28,6 +28,7 @@ class Filters extends BaseFilters
         'auth'          => \App\Filters\AuthFilter::class,
         'admin'         => \App\Filters\AdminFilter::class,
         'horario'       => \App\Filters\HorarioFilter::class,
+        'horarioApp'    => \App\Filters\HorarioConnectFilter::class,
         'suscripcion'   => \App\Filters\SuscripcionFilter::class,
         'csrf'          => CSRF::class,
         'toolbar'       => DebugToolbar::class,
@@ -110,5 +111,8 @@ class Filters extends BaseFilters
      *
      * @var array<string, array<string, list<string>>>
      */
-    public array $filters = [];
+    public array $filters = [
+        // App del gestor — bloqueo fuera del horario laboral del tenant
+        'horarioApp' => ['before' => ['*/connect', '*/connect/*']],
+    ];
 }

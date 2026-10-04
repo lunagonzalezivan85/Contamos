@@ -1,6 +1,6 @@
-{
-    "versionCode": 4,
-    "versionName": "1.2.0",
+ï»¿{
+    "versionCode": 5,
+    "versionName": "1.3.0",
     "url": "descargar/apk",
-    "mensaje": "Entrada simplificada + candado de identidad del cliente + chequeo de actualización al abrir."
+    "mensaje": "Bloqueo fuera del horario laboral (pantalla estilo Family Link)."
 }

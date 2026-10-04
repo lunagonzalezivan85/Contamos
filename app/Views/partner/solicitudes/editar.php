@@ -91,7 +91,7 @@ $gestorSel = (string) old('asignado_a', $s['asignado_a'] ?? '');
                     </div>
                     <div class="form-group">
                         <label for="plazo_meses">Plazo (meses)</label>
-                        <input type="number" id="plazo_meses" name="plazo_meses" min="1" max="<?= $plazoMax ?>" step="1"
+                        <input type="number" id="plazo_meses" name="plazo_meses" min="0.5" max="<?= $plazoMax ?>" step="0.5"
                                value="<?= esc(old('plazo_meses', $s['plazo_meses'])) ?>">
                         <small class="form-hint">Máximo <?= $plazoMax ?> meses.</small>
                     </div>

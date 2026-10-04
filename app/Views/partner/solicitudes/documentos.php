@@ -82,7 +82,7 @@ $fechaDoc   = date('d/m/Y');
     <div class="kv">
         <div><label>Monto <?= $plan['aprobado'] ? 'aprobado' : 'solicitado' ?></label><p><?= esc($mon) ?> <?= number_format($plan['monto'], 2) ?></p></div>
         <div><label>Tasa mensual</label><p><?= number_format($plan['tasa'], 2) ?>%</p></div>
-        <div><label>Plazo</label><p><?= $plan['plazo'] ?> meses</p></div>
+        <div><label>Plazo</label><p><?= (float) $plan['plazo'] ?> meses</p></div>
         <div><label>Frecuencia</label><p><?= esc($freqTxt) ?></p></div>
         <div><label>Cuota</label><p><?= esc($mon) ?> <?= number_format($plan['cuota'], 2) ?></p></div>
         <div><label>Nº de pagos</label><p><?= $plan['pagos'] ?></p></div>
@@ -115,8 +115,8 @@ $fechaDoc   = date('d/m/Y');
 // intereses del plan + cargos administrativos/seguro del tenant → CAT anualizado.
 $_cargos   = round((float) $plan['monto'] * ((float) ($tenant['comision_pct'] ?? 0) + (float) ($tenant['seguro_pct'] ?? 0)) / 100, 2);
 $_costoFin = (float) $plan['intereses'] + $_cargos;
-$_cat      = ((float) $plan['monto'] > 0 && (int) $plan['plazo'] > 0)
-    ? round($_costoFin / (float) $plan['monto'] / ((int) $plan['plazo'] / 12) * 100, 2) : 0.0;
+$_cat      = ((float) $plan['monto'] > 0 && (float) $plan['plazo'] > 0)
+    ? round($_costoFin / (float) $plan['monto'] / ((float) $plan['plazo'] / 12) * 100, 2) : 0.0;
 $_moraPct  = (float) ($tenant['mora_diaria_pct'] ?? 0);
 ?>
 <section class="doc">
@@ -145,7 +145,7 @@ $_moraPct  = (float) ($tenant['mora_diaria_pct'] ?? 0);
     <h3>Tercero — Condiciones</h3>
     <p class="body">
         Tasa de interés: <strong><?= number_format($plan['tasa'], 2) ?>% mensual</strong>.
-        Plazo: <strong><?= $plan['plazo'] ?> meses</strong>. Modalidad de pago: <strong><?= esc($freqTxt) ?></strong>,
+        Plazo: <strong><?= (float) $plan['plazo'] ?> meses</strong>. Modalidad de pago: <strong><?= esc($freqTxt) ?></strong>,
         en <strong><?= $plan['pagos'] ?> cuotas</strong> de <strong><?= esc($mon) ?> <?= number_format($plan['cuota'], 2) ?></strong>,
         la primera con vencimiento el <strong><?= esc($plan['fecha_inicio']) ?></strong> y la última el
         <strong><?= esc($plan['fecha_fin']) ?></strong>, conforme al plan de pago adjunto.

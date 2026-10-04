@@ -86,7 +86,7 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
                     </div>
                     <div class="form-group">
                         <label for="plazo_meses">Plazo (meses)</label>
-                        <input type="number" id="plazo_meses" name="plazo_meses" min="1" max="<?= $pMax ?>" step="1"
+                        <input type="number" id="plazo_meses" name="plazo_meses" min="0.5" max="<?= $pMax ?>" step="0.5"
                                value="<?= esc(old('plazo_meses', min(12, $pMax))) ?>">
                         <small class="form-hint">Máximo <?= $pMax ?> meses.</small>
                     </div>
@@ -213,7 +213,7 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
     function resumen() {
         var f    = freq();
         var P    = parseFloat(monto.value) || 0;
-        var mes  = parseInt(plazo.value, 10) || 0;
+        var mes  = parseFloat(plazo.value) || 0;
         var dSem = parseInt(dias.value, 10) || 3;
         var lim  = limiteCli();
 

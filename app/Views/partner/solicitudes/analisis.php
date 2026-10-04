@@ -39,7 +39,7 @@ $sect     = [
             <div class="detail-grid mt-3">
                 <div><label>Monto</label><p><strong><?= esc($mon) ?> <?= number_format((float) $s['monto'], 2) ?></strong></p></div>
                 <div><label>Tasa mensual</label><p><?= number_format((float) ($s['tasa_mensual'] ?? 0), 2) ?>%</p></div>
-                <div><label>Plazo</label><p><?= esc($s['plazo_meses'] ?: '—') ?> meses</p></div>
+                <div><label>Plazo</label><p><?= esc((float) ($s['plazo_meses'] ?? 0) ?: '—') ?> meses</p></div>
                 <div><label>Frecuencia</label><p><?= esc($lblFreq[$s['frecuencia']] ?? $s['frecuencia']) ?></p></div>
                 <div><label>Núm. pagos</label><p><?= (int) $m['pagos'] ?></p></div>
                 <div><label>Destino</label><p><?= esc($s['destino'] ?? '—') ?></p></div>

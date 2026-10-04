@@ -52,12 +52,16 @@ class ValoracionService
         if ($estrellas < 1 || $estrellas > 5) {
             return ['ok' => false, 'error' => 'Selecciona de 1 a 5 estrellas.'];
         }
-        $this->valoraciones->insert([
-            'tenant_id' => $tenantId,
-            'user_id'   => $userId,
-            'estrellas' => $estrellas,
-            'resena'    => $resena !== null && $resena !== '' ? mb_substr($resena, 0, 1000) : null,
-        ]);
+        try {
+            $this->valoraciones->insert([
+                'tenant_id' => $tenantId,
+                'user_id'   => $userId,
+                'estrellas' => $estrellas,
+                'resena'    => $resena !== null && $resena !== '' ? mb_substr($resena, 0, 1000) : null,
+            ]);
+        } catch (\Throwable) {
+            return ['ok' => false, 'error' => 'No se pudo guardar la valoración. Intente de nuevo.'];
+        }
         return ['ok' => true];
     }
 }

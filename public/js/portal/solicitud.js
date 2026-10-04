@@ -165,7 +165,7 @@
     function datos() {
         var P     = parseFloat(montoIn.value) || 0;
         var i     = Math.min(parseFloat(tasaIn.value) || 0, TASA_MAX) / 100;
-        var meses = parseInt(plazoIn.value, 10) || 0;
+        var meses = parseFloat(plazoIn.value) || 0;
         var dias  = parseInt(diasIn.value, 10) || 3;
         var pagosPorMes = freq === 'DI' ? 4 * dias : (freqPagos[freq] || 1);
         var iP = i / pagosPorMes;

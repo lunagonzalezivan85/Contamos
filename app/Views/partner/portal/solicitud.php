@@ -138,8 +138,8 @@
             <p class="geo-hint">Podés bajarla para negociar — el máximo es la tasa de la empresa (<?= number_format($tasaMax, 2) ?>%).</p>
         </div>
         <div class="calc-field">
-            <div class="calc-field-head"><label>Plazo del préstamo</label><output class="calc-val" id="sol-plazo-lbl"><?= (int) old('plazo_meses', min(12, (int) ($tenant['plazo_meses_max'] ?? 60))) ?> meses</output></div>
-            <input type="number" class="calc-num" id="plazo_meses" name="plazo_meses" min="3" max="<?= (int) ($tenant['plazo_meses_max'] ?? 60) ?>" step="1" inputmode="numeric" value="<?= esc(old('plazo_meses', min(12, (int) ($tenant['plazo_meses_max'] ?? 60)))) ?>">
+            <div class="calc-field-head"><label>Plazo del préstamo</label><output class="calc-val" id="sol-plazo-lbl"><?= (float) old('plazo_meses', min(12, (int) ($tenant['plazo_meses_max'] ?? 60))) ?> meses</output></div>
+            <input type="number" class="calc-num" id="plazo_meses" name="plazo_meses" min="0.5" max="<?= (int) ($tenant['plazo_meses_max'] ?? 60) ?>" step="0.5" inputmode="decimal" value="<?= esc(old('plazo_meses', min(12, (int) ($tenant['plazo_meses_max'] ?? 60)))) ?>">
         </div>
 
         <div class="form-group">

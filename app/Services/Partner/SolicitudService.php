@@ -145,7 +145,7 @@ class SolicitudService
 
         $tenant   = $this->tenant($tenantId);
         $plazoMax = (int) ($tenant['plazo_meses_max'] ?? 0);
-        $plazo    = ($d['plazo_meses'] ?? '') !== '' ? (int) $d['plazo_meses'] : null;
+        $plazo    = ($d['plazo_meses'] ?? '') !== '' ? (float) $d['plazo_meses'] : null;
         if ($plazo !== null && $plazoMax > 0 && $plazo > $plazoMax) {
             return ['ok' => false, 'error' => "El plazo máximo permitido es {$plazoMax} meses."];
         }
@@ -254,10 +254,14 @@ class SolicitudService
             ? 4 * (int) ($sol['dias_semana'] ?? 3)
             : ($freqPagos[$sol['frecuencia'] ?? 'M'] ?? 1);
         $iP    = ((float) ($sol['tasa_mensual'] ?? 0) / 100) / max($pagosXmes, 0.01);
-        $n     = max(1, round(((int) ($sol['plazo_meses'] ?? 0)) * $pagosXmes));
-        $cuota = $iP > 0
-            ? (float) $sol['monto'] * $iP * (1 + $iP) ** $n / ((1 + $iP) ** $n - 1)
-            : (float) $sol['monto'] / $n;
+        $n     = max(1, round(((float) ($sol['plazo_meses'] ?? 0)) * $pagosXmes));
+        $cuota = match ($sol['tipo_calculo'] ?? 'FRANCES') {
+            'FLAT', 'ALEMAN' => (float) $sol['monto'] / $n + (float) $sol['monto'] * $iP,
+            'ANTICIPADO'     => (float) $sol['monto'] / $n,
+            default          => $iP > 0
+                ? (float) $sol['monto'] * $iP * (1 + $iP) ** $n / ((1 + $iP) ** $n - 1)
+                : (float) $sol['monto'] / $n,
+        };
 
         $sum      = static fn (array $rows, string $col): float =>
             array_sum(array_map(static fn ($r) => (float) ($r[$col] ?? 0), $rows));
@@ -303,7 +307,7 @@ class SolicitudService
         $freq  = (string) ($sol['frecuencia_aprobada'] ?? $sol['frecuencia'] ?? 'M');
         $monto = (float) ($sol['monto_aprobado'] ?? $sol['monto']);
         $tasa  = (float) ($sol['tasa_aprobada'] ?? $sol['tasa_mensual'] ?? 0);
-        $plazo = (int) ($sol['plazo_aprobado'] ?? $sol['plazo_meses'] ?? 1);
+        $plazo = (float) ($sol['plazo_aprobado'] ?? $sol['plazo_meses'] ?? 1);
         $dias  = max(1, (int) ($sol['dias_semana'] ?? 3));
         $tipo  = in_array($sol['tipo_calculo'] ?? '', array_keys(self::TIPOS_CALCULO), true)
             ? (string) $sol['tipo_calculo'] : 'FRANCES';
@@ -411,7 +415,7 @@ class SolicitudService
 
         return [
             'monto' => $monto, 'tasa' => $tasa, 'plazo' => $plazo, 'freq' => $freq, 'tipo' => $tipo,
-            'cuota' => round($esAnticipado ? $monto / $n : ($tipo === 'ALEMAN' ? ($rows[$graciaPagos]['cuota'] ?? $cuotaFrances) : $cuotaFrances), 2),
+            'cuota' => round($esAnticipado ? $monto / $n : ($tipo === 'FRANCES' ? $cuotaFrances : ($rows[$graciaPagos]['cuota'] ?? $cuotaFrances)), 2),
             'pagos' => $graciaPagos + $n,
             'total' => round(array_sum(array_column($rows, 'cuota')), 2),
             'intereses' => round(array_sum(array_column($rows, 'interes')), 2) + $interesAnticipado,
@@ -509,7 +513,7 @@ class SolicitudService
     public function guardarAprobacion(int $tenantId, array $sol, array $d): array
     {
         $plazoMax = $this->plazoMax($tenantId);
-        $plazoA   = (int) $d['plazo_aprobado'];
+        $plazoA   = (float) $d['plazo_aprobado'];
         if ($plazoMax > 0 && $plazoA > $plazoMax) {
             return ['ok' => false, 'error' => "El plazo aprobado no puede superar {$plazoMax} meses (parámetro del tenant)."];
         }
@@ -640,7 +644,7 @@ class SolicitudService
         }
 
         $plazoMax = $this->plazoMax($tenantId);
-        $plazo    = ($d['plazo_meses'] ?? '') !== '' ? (int) $d['plazo_meses'] : null;
+        $plazo    = ($d['plazo_meses'] ?? '') !== '' ? (float) $d['plazo_meses'] : null;
         if ($plazo !== null && $plazoMax > 0 && $plazo > $plazoMax) {
             return ['ok' => false, 'error' => "El plazo máximo permitido es {$plazoMax} meses."];
         }

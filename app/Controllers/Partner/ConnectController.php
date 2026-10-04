@@ -498,7 +498,7 @@ class ConnectController extends BaseController
             'monto'             => (float) ($d['monto'] ?? 0),
             'tasa_mensual'      => min(max(0.0, (float) ($d['tasa_mensual'] ?? $tenant['tasa_interes'] ?? 0)),
                                        (float) ($tenant['tasa_interes'] ?? 0)),
-            'plazo_meses'       => (int) ($d['plazo_meses'] ?? 1),
+            'plazo_meses'       => (float) ($d['plazo_meses'] ?? 1),
             'frecuencia'        => (string) ($d['frecuencia'] ?? 'M'),
             'dias_semana'       => (int) ($d['dias_semana'] ?? 3),
             'paso_dias'         => (int) ($d['paso_dias'] ?? 0),

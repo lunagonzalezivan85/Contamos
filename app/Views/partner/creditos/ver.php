@@ -187,7 +187,7 @@ $gestor = trim(($s['gestor_nombres'] ?? '') . ' ' . ($s['gestor_apellidos'] ?? '
                 </div>
                 <div class="form-group">
                     <label>Plazo (meses)</label>
-                    <input type="number" name="plazo_meses" min="1" value="<?= esc($s['plazo_aprobado'] ?: $s['plazo_meses']) ?>">
+                    <input type="number" name="plazo_meses" min="0.5" step="0.5" value="<?= esc($s['plazo_aprobado'] + 0 ?: $s['plazo_meses'] + 0) ?>">
                 </div>
                 <div class="form-group">
                     <label>Tasa mensual (%)</label>
@@ -241,8 +241,8 @@ $gestor = trim(($s['gestor_nombres'] ?? '') . ' ' . ($s['gestor_apellidos'] ?? '
                 </div>
                 <div class="form-group">
                     <label>Nuevo plazo (meses) *</label>
-                    <input type="number" name="plazo_aprobado" min="1" required
-                           value="<?= esc($s['plazo_aprobado'] ?: $s['plazo_meses']) ?>">
+                    <input type="number" name="plazo_aprobado" min="0.5" step="0.5" required
+                           value="<?= esc($s['plazo_aprobado'] + 0 ?: $s['plazo_meses'] + 0) ?>">
                 </div>
                 <div class="form-group">
                     <label>Frecuencia *</label>
