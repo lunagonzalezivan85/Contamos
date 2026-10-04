@@ -15,10 +15,13 @@
 param([switch]$Ver)
 
 # ================= CONFIG =================
-$DbHost = "mysql8001.site4now.net"
-$DbUser = "aa03a4_actas"
-$DbPass = "easy2023"
-$DbName = "db_aa03a4_actas"
+# Las credenciales viven en deploy.config.ps1 (local, gitignored).
+$cfg = Join-Path $PSScriptRoot 'deploy.config.ps1'
+if (!(Test-Path $cfg)) {
+    Write-Host "Falta deploy.config.ps1 - copia deploy.config.ejemplo.ps1 y completa las credenciales." -ForegroundColor Red
+    exit 1
+}
+. $cfg
 $Tabla  = "CT_deploy_sync"
 # ===========================================
 

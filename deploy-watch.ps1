@@ -8,10 +8,12 @@
 #>
 
 # ================= CONFIG (la misma de deploy.ps1) =================
-$FtpHost   = "ftp://contamos.softlutionic.com"
-$FtpUser   = "actas_maria"
-$FtpPass   = "easy2023"
-$RemoteDir = "/"          # carpeta remota del proyecto
+$cfg = Join-Path $PSScriptRoot 'deploy.config.ps1'
+if (!(Test-Path $cfg)) {
+    Write-Host "Falta deploy.config.ps1 - copia deploy.config.ejemplo.ps1 y completa las credenciales." -ForegroundColor Red
+    exit 1
+}
+. $cfg
 # ===================================================================
 
 $root = $PSScriptRoot
@@ -39,7 +41,7 @@ while ($true) {
     foreach ($f in $nuevos) {
         $rel = $f.FullName.Substring($root.Length + 1)
         $url = "$FtpHost$RemoteDir" + ($rel -replace '\\', '/')
-        curl.exe -s -T "$($f.FullName)" --user $cred --ftp-create-dirs "$url" 2>&1 | Out-Null
+        curl.exe -s -T "$($f.FullName)" --user $cred --ftp-create-dirs --ftp-skip-pasv-ip "$url" 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) {
             Write-Host "  ↑ $rel" -ForegroundColor DarkGray
         } else {

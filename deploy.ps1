@@ -14,10 +14,13 @@ param(
 )
 
 # ================= CONFIG =================
-$FtpHost   = "win8166.site4now.net"
-$FtpUser   = "ftpcontamos"
-$FtpPass   = "$Easy2023"
-$RemoteDir = "/contamos"          # carpeta remota donde vive el proyecto (sin / al final, "" = raíz)
+# Las credenciales viven en deploy.config.ps1 (local, gitignored).
+$cfg = Join-Path $PSScriptRoot 'deploy.config.ps1'
+if (!(Test-Path $cfg)) {
+    Write-Host "Falta deploy.config.ps1 - copia deploy.config.ejemplo.ps1 y completa las credenciales." -ForegroundColor Red
+    exit 1
+}
+. $cfg
 # ==========================================
 
 $root   = $PSScriptRoot
@@ -48,7 +51,9 @@ function Subir([string]$local, [string]$rel) {
     $relUrl = $rel -replace '\\', '/'
     $url    = "$FtpHost$RemoteDir$relUrl"
     # --ftp-create-dirs crea las carpetas remotas que falten
-    $out = curl.exe -s -T "$local" --user $cred --ftp-create-dirs "$url" 2>&1
+    # --ftp-skip-pasv-ip: el server esta detras de NAT y devuelve su IP interna
+    # en el PASV — sin el flag la conexion de datos muere por timeout.
+    $out = curl.exe -s -T "$local" --user $cred --ftp-create-dirs --ftp-skip-pasv-ip "$url" 2>&1
     if ($LASTEXITCODE -ne 0) { Write-Host "  X $rel  ($out)" -ForegroundColor Red; return $false }
     Write-Host "  -> $rel" -ForegroundColor DarkGray
     return $true
@@ -57,7 +62,7 @@ function Subir([string]$local, [string]$rel) {
 # ---------------- borrar remoto ----------------
 if ($Borrar) {
     $url = "$FtpHost$RemoteDir" + ($Borrar -replace '\\', '/')
-    curl.exe -s --user $cred --quote "DELE $RemoteDir$($Borrar -replace '\\','/')" "$FtpHost/" 2>&1 | Out-Null
+    curl.exe -s --user $cred --ftp-skip-pasv-ip --quote "DELE $RemoteDir$($Borrar -replace '\\','/')" "$FtpHost/" 2>&1 | Out-Null
     Write-Host "Borrado remoto: $Borrar (si existia)" -ForegroundColor Yellow
     exit 0
 }

@@ -63,7 +63,9 @@
 ### Server (producción)
 - Host: `contamos.softlutionic.com` · site4now (IIS compartido)
 - DB remota: `mysql8001.site4now.net` · `db_aa03a4_actas` · prefijo **`CT_`** (DBPrefix)
-- FTP: host real del panel site4now — NO el dominio (Cloudflare no proxya :21)
+- FTP: `ftp://win8166.site4now.net` (host del panel site4now — NO el dominio,
+  Cloudflare no proxya :21). Raíz FTP = raíz del proyecto.
+- Credenciales: `deploy.config.ps1` (local, gitignored — ver `deploy.config.ejemplo.ps1`)
 - MySQL 5.7 en el server vs MariaDB 10.4 local — `bigint(20)` ≡ `bigint` (solo display width)
 
 ## 6. Ritual de deploy

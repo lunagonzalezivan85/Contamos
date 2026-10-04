@@ -45,20 +45,32 @@ pueda ejecutar las pruebas sobre cada cambio.
 - Si hubo cambio de esquema → `.sql` en `writable/migraciones_sql/` y avisar para
   correr `.\sync-bd.ps1`.
 
-## Credenciales del server — ⚠️ BORRAR ESTA SECCIÓN TRAS COPIARLAS
+## Acceso al server — procedimiento (leer completo antes de mover nada)
 
-> Copiá estos datos a tu máquina (config local / notas seguras) y **eliminá esta
-> sección completa del archivo antes de commitear**. Es solo para que tengás los
-> accesos la primera vez — no deben quedar escritos en el repo.
+Las credenciales están en la tabla de abajo **solo hasta que las copies**.
+Pasos:
 
-**FTP — subida de archivos (`deploy.ps1`)**
+1. `git pull` (o cloná el repo).
+2. Copiá `deploy.config.ejemplo.ps1` → **`deploy.config.ps1`** (gitignored, solo
+   vive en tu máquina) y completá los valores de la tabla. `deploy.ps1`,
+   `deploy-watch.ps1` y `sync-bd.ps1` leen de ahí — ya no llevan claves escritas.
+   Ojo: las claves van entre comillas **simples** (`'$Easy2023'`) para que el `$`
+   no se interpole en PowerShell.
+3. **Avisá al dueño del repo que ya las copiaste.** Él corre
+   `.\purge-creds.ps1 -Push`, que reescribe TODO el historial reemplazando las
+   claves por `***REMOVED***` (incluida esta tabla) y hace force-push.
+4. Después del purge, tu clone quedó divergido: corré
+   `git fetch; git reset --hard origin/main` (o re-cloná). Tu copia local de las
+   credenciales (deploy.config.ps1) no se toca.
+
+**FTP — subida de archivos (`deploy.ps1` / `deploy-watch.ps1`)**
 
 | Dato | Valor |
 |---|---|
-| Host | `win8166.site4now.net` |
+| Host | `ftp://win8166.site4now.net` |
 | Usuario | `ftpcontamos` |
 | Clave | `$Easy2023` |
-| Carpeta remota | `/contamos` |
+| Carpeta remota | `/` (la raíz FTP ya es el proyecto) |
 
 **MySQL remoto — sync de esquema (`sync-bd.ps1`)**
 

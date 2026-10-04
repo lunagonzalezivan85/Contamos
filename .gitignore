@@ -144,3 +144,9 @@ public/app/*.apk
 
 # Sello local del ultimo deploy (estado por maquina)
 .deploy-stamp
+
+# Credenciales locales del deploy/sync (no versionar)
+deploy.config.ps1
+# Temporales del purge de credenciales
+.purge-secrets.txt
+.purge-sed.sed
