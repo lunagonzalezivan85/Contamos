@@ -216,9 +216,9 @@ if (!function_exists('plan_actual')) {
 
 if (!function_exists('en_horario')) {
     /**
-     * Horario laboral del tenant — portal gestor + app móvil.
-     * tenants.hora_inicio / hora_fin (TIME). Sin rango = sin restricción.
-     * Soporta rangos que cruzan medianoche (p.ej. 20:00–06:00).
+     * Horario laboral del tenant ï¿½ portal gestor + app mï¿½vil.
+     * tenants.hora_inicio / hora_fin (TIME). Sin rango = sin restricciï¿½n.
+     * Soporta rangos que cruzan medianoche (p.ej. 20:00ï¿½06:00).
      * @return array{ok: bool, ini: string, fin: string}
      */
     function en_horario(array $tenant): array
@@ -229,9 +229,11 @@ if (!function_exists('en_horario')) {
         if (!$ini || !$fin) {
             return $out;
         }
-        $ahora = date('H:i:s');
+        // El server corre en UTC (site4now) â€” el horario del tenant es hora
+        // de Nicaragua; evaluar con TZ fija para no desplazar el rango +6h.
+        $ahora = (new DateTime('now', new DateTimeZone('America/Managua')))->format('H:i:s');
         $out['ok'] = $ini <= $fin
-            ? ($ahora >= $ini && $ahora <= $fin)   // mismo día
+            ? ($ahora >= $ini && $ahora <= $fin)   // mismo dï¿½a
             : ($ahora >= $ini || $ahora <= $fin); // cruza medianoche
         return $out;
     }

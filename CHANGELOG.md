@@ -4,6 +4,15 @@ Registro de cambios por sesión. Más reciente arriba.
 
 ---
 
+## 2026-10-05 — Selector de fecha en ruta de cobro del gestor
+
+- **`/{slug}/portal/mapa`** ahora acepta `?fecha=YYYY-MM-DD`: el gestor puede ver
+  la ruta de otro día para adelantar cobros (las cuotas con `fecha_vence <= fecha`
+  se suman a la parada). Input `type="date"` en el encabezado recarga la página.
+- `PortalService::rutaCobrosHoy()` recibe `?string $fecha` (default hoy); el flag
+  `vencida` de la parada ahora es relativo a la fecha elegida
+  (`fecha_vence < fecha`), no al día actual.
+
 ## 2026-10-04 (PM) — Iconos Waze/Maps en popups de mapa + fix deploy FTP
 
 - **Popup de markers con navegación** — al tocar una parada en el mapa de la ruta de cobro (`/{slug}/portal/mapa`) y en el mapa de desembolsos (`/credito/desembolsar`), el popup muestra botones **solo-icono** Waze y Google Maps (`.map-ic`, mismos paths de marca que `icon_helper`). La lista sigue con sus links de texto.

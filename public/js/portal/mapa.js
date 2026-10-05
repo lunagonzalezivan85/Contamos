@@ -282,6 +282,17 @@
         dibujar();
     });
 
+    // Cambio de fecha → recargar la ruta de ese día (permite adelantar cobros)
+    var elFecha = document.getElementById('ruta-fecha');
+    if (elFecha) {
+        elFecha.addEventListener('change', function () {
+            if (!elFecha.value) return;
+            var url = new URL(location.href);
+            url.searchParams.set('fecha', elFecha.value);
+            location.href = url.toString();
+        });
+    }
+
     if (btnGps) btnGps.addEventListener('click', localizar);
 
     /* ---------- arranque ---------- */

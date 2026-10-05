@@ -754,7 +754,11 @@
     overflow: hidden;
     border: 1px solid #EEF2F6;
 }
-.ruta-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.ruta-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+.ruta-fecha {
+    padding: 9px 12px; border: 1.5px solid #E2E8F0; border-radius: 10px;
+    background: #fff; color: var(--text); font: inherit; font-weight: 600;
+}
 .ruta-warn { color: var(--danger, #EF4444); font-weight: 600; }
 
 .ruta-mk {

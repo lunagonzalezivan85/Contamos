@@ -29,6 +29,11 @@ class HorarioConnectFilter implements FilterInterface
             return;
         }
 
+        // Los filtros corren antes del controller → el helper 'plan' no está
+        // cargado aún (solo lo carga BaseController::$helpers). Sin esto,
+        // en_horario() es undefined y /connect devuelve 500.
+        helper('plan');
+
         $tenant = (new TenantModel())->where('slug', $slug)->first();
         if (!$tenant) {
             return;

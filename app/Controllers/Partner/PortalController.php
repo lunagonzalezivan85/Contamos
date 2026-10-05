@@ -380,13 +380,19 @@ class PortalController extends BaseController
         if (!$ctx) return redirect()->to('/' . $slug . '/portal/login');
         [$tenant, $empleado] = $ctx;
 
-        $paradas = $this->portal->rutaCobrosHoy((int) $tenant['id'], (int) $empleado['id']);
+        // ?fecha=YYYY-MM-DD — permite planear la ruta de otro día (adelantar cobros)
+        $fecha = (string) $this->request->getGet('fecha');
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+            $fecha = date('Y-m-d');
+        }
+        $paradas = $this->portal->rutaCobrosHoy((int) $tenant['id'], (int) $empleado['id'], $fecha);
 
         return view('partner/portal/mapa', [
             'title'    => 'Ruta de cobro - ' . $tenant['nombre'],
             'tenant'   => $tenant,
             'slug'     => $slug,
             'empleado' => $empleado,
+            'fecha'    => $fecha,
             'paradas'  => $paradas,
             'total'    => round(array_sum(array_column($paradas, 'monto')), 2),
             'con_gps'  => count(array_filter($paradas, fn($p) => $p['lat'] !== null)),

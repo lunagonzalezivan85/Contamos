@@ -11,7 +11,7 @@
 
 <!-- ===== Encabezado ===== -->
 <div class="card portal-card">
-    <h4 class="card-title"><?= icon('map-pin', 16) ?> Ruta de cobro · <?= date('d/m/Y') ?></h4>
+    <h4 class="card-title"><?= icon('map-pin', 16) ?> Ruta de cobro · <?= esc(date('d/m/Y', strtotime($fecha ?? 'now'))) ?></h4>
     <p class="card-subtitle">
         <?= count($paradas) ?> parada(s) por cobrar ·
         <strong><?= esc($m2) ?> <?= number_format($total, 2) ?></strong>
@@ -20,6 +20,9 @@
         <?php endif; ?>
     </p>
     <div class="ruta-actions">
+        <input type="date" id="ruta-fecha" class="ruta-fecha"
+               value="<?= esc($fecha ?? date('Y-m-d')) ?>"
+               title="Ver la ruta de otro día (adelantar cobros)">
         <button type="button" class="btn btn-primary" id="ruta-gps-btn"><?= icon('map-pin', 15) ?> Mi ubicación</button>
         <button type="button" class="btn btn-outline" id="ruta-pick-btn"><?= icon('users', 15) ?> Elegir clientes</button>
     </div>
@@ -34,7 +37,7 @@
 
 <!-- ===== Lista de paradas (ordenada por el JS según tu GPS) ===== -->
 <div class="card portal-card">
-    <h4 class="card-title"><?= icon('clipboard', 16) ?> Paradas de hoy</h4>
+    <h4 class="card-title"><?= icon('clipboard', 16) ?> Paradas del día</h4>
     <div id="ruta-lista" class="ruta-lista"></div>
 </div>
 

@@ -699,12 +699,13 @@ class PortalService
 
     /**
      * Ruta de cobro del gestor: una parada por crédito con cuota que vence
-     * hoy o ya está vencida, con la mejor dirección (preferir la que tiene GPS).
+     * a la fecha indicada o antes (default hoy — sirve para adelantar pagos),
+     * con la mejor dirección (preferir la que tiene GPS).
      * @return array<int, array>
      */
-    public function rutaCobrosHoy(int $tenantId, int $empleadoId): array
+    public function rutaCobrosHoy(int $tenantId, int $empleadoId, ?string $fecha = null): array
     {
-        $hoy      = date('Y-m-d');
+        $hoy      = $fecha ?: date('Y-m-d');
         $creditos = $this->cobrosDelGestor($tenantId, $empleadoId);
 
         $paradas = [];
@@ -714,7 +715,7 @@ class PortalService
             foreach ($cr['cuotas_pend'] ?? [] as $c) {
                 if ($c['fecha_vence'] <= $hoy) {
                     $monto   += (float) $c['pendiente'];
-                    $vencida = $vencida || ($c['vencida'] ?? false);
+                    $vencida = $vencida || ($c['fecha_vence'] < $hoy);
                 }
             }
             if ($monto <= 0) continue;

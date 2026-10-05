@@ -27,7 +27,8 @@ class HorarioFilter implements FilterInterface
             return; // sin rango configurado = sin restricción
         }
 
-        $ahora = date('H:i:s');
+        // Hora de Nicaragua (el server corre en UTC — site4now)
+        $ahora = (new \DateTime('now', new \DateTimeZone('America/Managua')))->format('H:i:s');
         if ($ahora < $ini || $ahora > $fin) {
             return redirect()->to('/dashboard')
                 ->with('error', 'El sistema está disponible de '
