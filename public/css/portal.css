@@ -249,6 +249,17 @@
 .map-waze  { background: #E8F4FD; color: #1784C6; }
 .map-gmaps { background: #E8F6EE; color: #1FA87C; }
 
+/* Iconos de navegación dentro del popup del mapa (ruta de cobro) */
+.maplibregl-popup-content .map-nav { display: flex; gap: 8px; margin-top: 8px; }
+.map-ic {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: transform .15s, box-shadow .15s;
+}
+.map-ic:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.map-ic-waze  { background: #E8F4FD; color: #1784C6; }
+.map-ic-gmaps { background: #E8F6EE; color: #1FA87C; }
+
 /* ---------- Cartera — tarjetas de cliente ---------- */
 .cli-list { display: flex; flex-direction: column; gap: 10px; }
 .cli-item {

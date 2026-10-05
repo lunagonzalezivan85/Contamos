@@ -4,6 +4,13 @@ Registro de cambios por sesión. Más reciente arriba.
 
 ---
 
+## 2026-10-04 (PM) — Iconos Waze/Maps en popups de mapa + fix deploy FTP
+
+- **Popup de markers con navegación** — al tocar una parada en el mapa de la ruta de cobro (`/{slug}/portal/mapa`) y en el mapa de desembolsos (`/credito/desembolsar`), el popup muestra botones **solo-icono** Waze y Google Maps (`.map-ic`, mismos paths de marca que `icon_helper`). La lista sigue con sus links de texto.
+- **Fix deploy FTP (crítico)** — `deploy.ps1` subía por HTTP: el host no llevaba esquema `ftp://` (curl defaultea a HTTP → PUT silencioso a 404), `$RemoteDir='/contamos'` no existía (la raíz FTP ya es el proyecto) y `"$Easy2023"` interpolaba a clave vacía en PowerShell. Además el server está tras NAT y responde PASV con su IP interna → timeouts en el canal de datos; fix con `--ftp-skip-pasv-ip` en `deploy.ps1`, `deploy-watch.ps1` y borrado remoto.
+- **Credenciales fuera del repo** — `deploy.config.ps1` local (gitignored) compartido por `deploy.ps1`, `deploy-watch.ps1` y `sync-bd.ps1`; plantilla `deploy.config.ejemplo.ps1`. `GALVIN.md` documenta el procedimiento pull → copiar → purge → re-clone.
+- **`purge-creds.ps1`** — reescribe TODO el historial de git reemplazando los secretos de `.purge-secrets.txt` por `***REMOVED***` (filter-branch + sed, sin dependencias externas), con rama `backup-pre-purge` y `-Push` para force-push. Para correr DESPUÉS de que Galvin copie las credenciales.
+
 ## 2026-10-04 — Ruta de desembolsos en panel tenant
 
 - **`GET /credito/desembolsar`** — nueva opción «Desembolsar» en el menú Crédito (permiso `solicitudes.desembolsar`, icono map-pin). Lista todas las solicitudes en estado DESEMBOLSO del tenant (todos los gestores) con monto aprobado, fecha de entrega, gestor asignado y mejor dirección del cliente (GPS preferido — mismo criterio que `rutaCobrosHoy`/`desembolsosPendientes` del portal). `SolicitudService::desembolsosRuta` devuelve paradas + total + conteo sin GPS + gestores presentes.
