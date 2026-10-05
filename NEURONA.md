@@ -122,4 +122,4 @@ Antes de marcar una tarea como lista:
 ### App gestor — ruta de cobro (pedido 2026-10-05)
 - Agregar **mapa** en la pantalla de ruta de la app (hoy solo lista; endpoint `connect/ruta` ya devuelve paradas con `lat/lng` — reusar patrón MapLibre/OSRM del portal `public/js/portal/mapa.js`).
 - **Rediseñar la lista** de paradas en la app (al usuario no le gusta la versión actual — definir con él: números, orden por cercanía, distancia, botones Waze/Maps).
-- **Selector de día** en la app: `connect/ruta?fecha=YYYY-MM-DD` para adelantar cobros — el endpoint ya acepta `?fecha=` (`rutaCobrosHoy(\, \, \)`); falta el UI en la app.
+- **Selector de día** en la app: `connect/ruta?fecha=YYYY-MM-DD` para adelantar cobros — el endpoint ya acepta `?fecha=` (`rutaCobrosHoy($tid, $empId, $fecha)`); falta el UI en la app.

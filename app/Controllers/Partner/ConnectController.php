@@ -363,16 +363,22 @@ class ConnectController extends BaseController
         ]);
     }
 
-    /** GET /{slug}/connect/ruta — paradas de cobro del día (GPS + monto). */
+    /** GET /{slug}/connect/ruta[?fecha=YYYY-MM-DD] — paradas de cobro del día (GPS + monto). */
     public function ruta(string $slug)
     {
         $this->cors();
         [$tenant, $empId] = $this->auth($slug);
         if (!$empId) return $this->response->setStatusCode(401)->setJSON(['ok' => false]);
 
+        $fecha = (string) $this->request->getGet('fecha');
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+            $fecha = null;   // default: hoy (en el service)
+        }
+
         return $this->response->setJSON([
             'ok'      => true,
-            'paradas' => $this->portal->rutaCobrosHoy((int) $tenant['id'], $empId),
+            'fecha'   => $fecha ?? date('Y-m-d'),
+            'paradas' => $this->portal->rutaCobrosHoy((int) $tenant['id'], $empId, $fecha),
         ]);
     }
 
