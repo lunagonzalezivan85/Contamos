@@ -94,7 +94,7 @@ $nota = [
         <div class="v-row"><span class="k">Cliente</span><span class="v"><?= esc($cliente) ?></span></div>
         <div class="v-row"><span class="k">Cédula</span><span class="v"><?= esc($p['cedula'] ?? '-') ?></span></div>
         <div class="v-row"><span class="k">Crédito</span><span class="v"><?= esc($p['codigo_credito'] ?? '#' . $p['solicitud_id']) ?></span></div>
-        <div class="v-row"><span class="k">Fecha</span><span class="v"><?= esc(date('d/m/Y h:i a', strtotime($p['fecha_hora']))) ?></span></div>
+        <div class="v-row"><span class="k">Fecha</span><span class="v"><?= esc(date('d/m/Y', strtotime($p['fecha_hora']))) ?></span></div>
         <div class="v-row"><span class="k">Método</span><span class="v"><?= esc($metodos[$p['metodo']] ?? $p['metodo']) ?></span></div>
         <div class="v-row"><span class="k">Recibió</span><span class="v"><?= esc($cobro) ?></span></div>
         <div class="v-row"><span class="k">Estado</span><span class="v"><?= esc($lblEstado[$est] ?? $est) ?></span></div>
