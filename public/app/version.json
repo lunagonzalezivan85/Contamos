@@ -1,6 +1,6 @@
 {
-    "versionCode": 6,
-    "versionName": "1.4.0",
+    "versionCode": 7,
+    "versionName": "1.5.0",
     "url": "descargar/apk",
-    "mensaje": "Ruta de cobro con selector de fecha, recibo con compartir, cobros del día reimprimibles y mejoras visuales."
+    "mensaje": "Descarga de actualización corregida, comprobar versión desde el menú, permisos de ubicación/cámara/notificaciones y selector de fecha en la ruta."
 }
