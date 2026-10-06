@@ -236,6 +236,9 @@ $empId = (int) $cliente['id'];
                         </div>
                         <small class="geo-hint">Haz clic en el mapa para fijar la ubicación.</small>
                     </div>
+                    <div class="form-group form-full">
+                        <button type="button" class="btn btn-outline btn-block" id="geo-gps"><?= icon('map-pin', 15) ?> Usar mi ubicación GPS</button>
+                    </div>
                     <div class="form-group">
                         <label>Tipo</label>
                         <select name="tipo">

@@ -777,6 +777,27 @@
         });
     }
 
+    // Botón GPS — captura la ubicación actual del usuario
+    var gpsBtn = document.getElementById('geo-gps');
+    if (gpsBtn && navigator.geolocation) {
+        gpsBtn.addEventListener('click', function () {
+            gpsBtn.disabled = true;
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                if (geoMap) {
+                    geoPoner({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                    geoMap.jumpTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 17 });
+                } else {
+                    geoSet('geo-latitud', pos.coords.latitude.toFixed(7));
+                    geoSet('geo-longitud', pos.coords.longitude.toFixed(7));
+                }
+                gpsBtn.disabled = false;
+            }, function () {
+                alert('No se pudo obtener la ubicación. Revisá los permisos de GPS.');
+                gpsBtn.disabled = false;
+            }, { enableHighAccuracy: true, timeout: 10000 });
+        });
+    }
+
     /* ---------- Selector de cargo (buscable) ---------- */
     var cgTrigger = document.getElementById('cargo-trigger');
     var cgPanel   = document.getElementById('cargo-panel');
