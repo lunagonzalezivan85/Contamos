@@ -154,6 +154,7 @@ class PagoController extends BaseController
             'title' => 'Recuperación - Contamos',
             'filas' => $data['rows'],
             'total' => $data['total_vencido'],
+            'cobrado' => $data['cobrado'] ?? 0,
             'hoy'   => $data['hoy'],
             'buscar'=> $buscar,
             'mon'   => $this->svc->moneda($tenantId),

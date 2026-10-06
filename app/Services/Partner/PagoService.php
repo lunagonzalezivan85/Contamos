@@ -180,7 +180,23 @@ class PagoService
 
         $tot = 0.0;
         foreach ($rows as $x) $tot += (float) $x['saldo_vencido'];
-        return ['rows' => $rows, 'total_vencido' => round($tot, 2), 'hoy' => $hasta];
+
+        // Cobrado en esa fecha (cobros vigentes del día) — para la barra
+        // de cumplimiento: lo recibido vs lo que quedaba por recuperar.
+        $cobrado = (float) ($this->pagos
+            ->selectSum('monto')
+            ->where('tenant_id', $tenantId)
+            ->where('tipo', PagoModel::TIPO_PAGO)
+            ->whereIn('estado', [PagoModel::REVISION, PagoModel::APLICADO])
+            ->where('DATE(' . $this->db->prefixTable('pagos') . '.fecha_hora)', $hasta)
+            ->first()['monto'] ?? 0);
+
+        return [
+            'rows'          => $rows,
+            'total_vencido' => round($tot, 2),
+            'cobrado'       => round($cobrado, 2),
+            'hoy'           => $hasta,
+        ];
     }
 
     /** Crédito del tenant (ACTIVO) con datos del cliente/gestor, o null. */

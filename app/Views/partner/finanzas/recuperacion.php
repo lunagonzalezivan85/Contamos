@@ -37,6 +37,24 @@
     </div>
 </div>
 
+<!-- Cumplimiento del día: cobrado vs por recuperar -->
+<?php
+$meta = (float) $cobrado + (float) $total;   // lo que estaba por cobrar al abrir el día
+$pct  = $meta > 0 ? min(100, round((float) $cobrado / $meta * 100)) : 0;
+?>
+<div class="card">
+    <div class="prog-head">
+        <span style="font-weight:700;">Cumplimiento al <?= esc(date('d/m/Y', strtotime($hoy))) ?></span>
+        <strong><?= $pct ?>%</strong>
+    </div>
+    <div class="prog"><div class="prog-fill" style="width:<?= $pct ?>%"></div></div>
+    <p class="card-subtitle" style="margin-top:8px;">
+        Cobrado <?= esc($m2) ?> <?= number_format((float) $cobrado, 2) ?>
+        de <?= esc($m2) ?> <?= number_format($meta, 2) ?> por recuperar.
+        <?php if ($pct >= 100): ?>Meta cumplida — todo recuperado.<?php endif; ?>
+    </p>
+</div>
+
 <!-- Listado -->
 <div class="card">
     <?php if (empty($filas)): ?>
