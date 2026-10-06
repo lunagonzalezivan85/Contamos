@@ -52,12 +52,13 @@
                 <label for="cli-pick-q">Selecciona el cliente *</label>
             <div class="cli-pick" id="cli-pick">
                 <input type="hidden" name="cliente_id" id="cliente_id" value="<?= esc(old('cliente_id')) ?>">
-                <div class="cli-pick-input <?= $oldNom !== '' ? 'sel' : '' ?>" id="cli-pick-wrap">
+                <div class="cli-pick-input pz-notch <?= $oldNom !== '' ? 'sel' : '' ?>" id="cli-pick-wrap">
                     <?= icon('search', 16) ?>
                     <input type="text" id="cli-pick-q" autocomplete="off"
                            placeholder="Buscar por nombre, código o cédula."
                            value="<?= esc($oldNom) ?>" <?= $oldNom !== '' ? 'readonly' : '' ?>>
                     <button type="button" class="cli-pick-clear" id="cli-pick-clear" <?= $oldNom === '' ? 'hidden' : '' ?>><?= icon('x', 14) ?></button>
+                    <span class="cli-pick-pin"><?= icon('chevron-down', 15) ?></span>
                 </div>
                 <div class="cli-pick-list" id="cli-pick-list" hidden>
                     <?php foreach ($clientes ?? [] as $c): ?>

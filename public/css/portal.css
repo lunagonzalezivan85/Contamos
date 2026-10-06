@@ -155,20 +155,75 @@
 }
 
 /* ---------- Wizard del portal (solicitud) ---------- */
-.wiz-progress { position: relative; display: flex; justify-content: space-between; padding: 0 8px; margin-bottom: 18px; }
-.wiz-step { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 1; }
-.wiz-num {
-    width: 36px; height: 36px; border-radius: 50%;
-    background: #fff; border: 2px solid #E2E8F0; color: var(--text-muted);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 14px; transition: all .2s;
+/* ==========================================================================
+   Diseño "puzzle" — piezas con corte circular (notch) y acción encajada.
+   El corte se dibuja en ::before (mask) para no recortar a los hijos.
+   ========================================================================== */
+
+/* Fondo con notch reutilizable: .pz-notch da la pieza, .pz-notch::before su
+   forma recortada; el botón/pin circular va encima (.pz-btn / .pz-pin). */
+.pz-notch { position: relative; z-index: 0; }
+.pz-notch::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background: #fff; border: 1.5px solid #E7EDF4; border-radius: 14px;
+    -webkit-mask-image: radial-gradient(circle 21px at calc(100% - 23px) 50%, transparent 20px, black 21px);
+    mask-image: radial-gradient(circle 21px at calc(100% - 23px) 50%, transparent 20px, black 21px);
 }
-.wiz-txt { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-.wiz-step.on .wiz-num { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border-color: var(--primary-dark); color: #fff; }
+.pz-notch > * { position: relative; z-index: 1; }
+.pz-notch.go::before { background: #F3FBF7; border-color: #D6EFE3; }   /* variante acción (cobrar/entregar) */
+
+/* Botón circular encajado en el notch (acción principal de la fila) */
+.pz-btn, .pz-pin {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    width: 38px; height: 38px; border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.pz-btn {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; cursor: pointer; box-shadow: 0 4px 12px rgba(48, 203, 154, .40);
+    transition: transform .15s ease, filter .15s ease;
+}
+.pz-btn:hover  { transform: translateY(-50%) scale(1.07); filter: brightness(1.05); }
+.pz-btn:active { transform: translateY(-50%) scale(.94); }
+.pz-pin { background: var(--primary-soft); color: var(--primary-dark); pointer-events: none; }
+
+/* Reserva del corte: el contenido no debe pasar por debajo del botón/pin */
+.cli-main.pz-notch, .oui-list-item.pz-notch { padding-right: 54px; }
+.oui-list-item.pz-notch { border-bottom: none; }
+/* el hover se pinta en ::before (la pieza), no en el fondo del elemento */
+.cli-main.pz-notch:hover::before,
+.oui-list-item.pz-notch:hover::before { background: #F2FBF7; border-color: #CDEFDD; }
+
+/* ---------- Wizard encajado (solicitud: Cliente → Préstamo → Resumen) ------- */
+.wiz-progress { position: relative; display: flex; gap: 20px; padding: 0 2px; margin-bottom: 18px; }
+.wiz-step {
+    position: relative; z-index: 0; flex: 1; min-width: 0;
+    display: flex; flex-direction: row; align-items: center; gap: 8px;
+    padding: 12px 46px 12px 14px;
+}
+.wiz-step::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background: var(--surface); border: 1.5px solid #E7EDF4; border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(46, 53, 66, .05);
+    -webkit-mask-image: radial-gradient(circle 19px at calc(100% - 23px) 50%, transparent 18px, black 19px);
+    mask-image: radial-gradient(circle 19px at calc(100% - 23px) 50%, transparent 18px, black 19px);
+    transition: border-color .2s, background .2s;
+}
+.wiz-num {
+    /* círculo encajado en el notch del paso */
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    width: 34px; height: 34px; border-radius: 50%;
+    background: #EEF3F8; border: none; color: #94A3B8;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13.5px; transition: all .2s;
+}
+.wiz-txt { font-size: 12.5px; font-weight: 700; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wiz-step.on::before { border-color: var(--primary); background: linear-gradient(135deg, #fff, #F0FBF7); }
+.wiz-step.on .wiz-num { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; box-shadow: 0 4px 12px rgba(48, 203, 154, .4); }
 .wiz-step.on .wiz-txt { color: var(--primary-dark); }
-.wiz-step.done .wiz-num { background: var(--primary-soft); border-color: var(--primary); color: var(--primary-dark); }
-.wiz-line { position: absolute; top: 18px; left: 16.66%; right: 16.66%; height: 2px; background: #E2E8F0; z-index: 0; }
-.wiz-line i { display: block; height: 100%; width: 100%; background: var(--primary); transform: scaleX(0); transform-origin: left center; transition: transform .25s ease; }
+.wiz-step.done::before { border-color: #CDEFDD; }
+.wiz-step.done .wiz-num { background: var(--primary-soft); color: var(--primary-dark); }
+.wiz-line { display: none; }
 
 .wiz-pane { display: none; }
 .wiz-pane.on { display: block; }
@@ -435,6 +490,25 @@
 .cli-pick-item.sel > svg { display: block; }
 .cli-avatar-sm { width: 34px; height: 34px; font-size: 12px; }
 .cli-pick-empty { margin: 12px; font-size: 12.5px; color: var(--text-muted); text-align: center; }
+
+/* cli-pick con notch — pin/botón encajados en el corte del campo */
+.cli-pick-input.pz-notch { border-color: transparent; background: none; padding-right: 46px; }
+.cli-pick-input.pz-notch:focus-within::before { border-color: var(--primary); }
+.cli-pick-input.pz-notch.sel::before { border-color: var(--primary); background: var(--primary-soft); }
+.cli-pick-input.pz-notch .cli-pick-clear {
+    position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+    width: 36px; height: 36px; padding: 0;
+    align-items: center; justify-content: center;
+    background: #fff; border: 1.5px solid #F3D1CE; color: var(--danger);
+}
+.cli-pick-pin {
+    position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 10px rgba(48, 203, 154, .35); pointer-events: none;
+}
+.cli-pick-input.sel .cli-pick-pin { display: none; }
 
 /* ---------- Actividad — solicitudes con estado ---------- */
 .sol-monto { font-weight: 800; color: var(--primary-dark); margin-left: 6px; }

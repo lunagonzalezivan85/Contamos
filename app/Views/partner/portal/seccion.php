@@ -61,7 +61,7 @@ $titulos = [
                     }
                     ?>
                     <div class="cli-item">
-                        <div class="oui-list-item">
+                        <div class="oui-list-item pz-notch go">
                             <span class="oui-icon"><?= icon('dollar-sign', 18) ?></span>
                             <span class="oui-body">
                                 <span class="oui-title"><?= esc(trim($s['nombres'] . ' ' . $s['apellidos'])) ?> - <?= esc($m2) ?> <?= number_format((float) ($s['monto_aprobado'] ?: $s['monto']), 0) ?></span>
@@ -72,7 +72,7 @@ $titulos = [
                             <form method="post" action="<?= base_url($slug . '/portal/desembolso/' . $s['id'] . '/entregar') ?>"
                                   onsubmit="return confirm('¿Confirmar que entregaste el dinero?');">
                                 <?= csrf_field() ?>
-                                <button class="btn btn-primary btn-sm"><?= icon('check', 14) ?> Entregado</button>
+                                <button class="pz-btn" title="Marcar como entregado"><?= icon('check', 18) ?></button>
                             </form>
                             <?php else: ?>
                                 <span class="oui-sub" title="La oficina confirmará la entrega">Entrega en oficina</span>
@@ -136,7 +136,7 @@ $titulos = [
                     }
                     ?>
                     <div class="cli-item">
-                        <a class="cli-main" href="<?= base_url($slug . '/portal/cliente/' . $c['id']) ?>">
+                        <a class="cli-main pz-notch" href="<?= base_url($slug . '/portal/cliente/' . $c['id']) ?>">
                             <span class="cli-avatar"><?= esc($ini !== '' ? $ini : '?') ?></span>
                             <span class="cli-info">
                                 <span class="cli-nombre"><?= esc(trim($c['nombres'] . ' ' . $c['apellidos'])) ?></span>
@@ -145,7 +145,7 @@ $titulos = [
                                     <span class="badge <?= $c['estado'] === 'ACTIVO' ? 'badge-soft' : '' ?>"><?= esc($c['estado']) ?></span>
                                 </span>
                             </span>
-                            <span class="cli-flecha"><?= icon('chevron-right', 18) ?></span>
+                            <span class="pz-pin"><?= icon('chevron-right', 17) ?></span>
                         </a>
                         <?php if ($tel !== '' || $urlWaze): ?>
                         <div class="cli-acciones">
@@ -185,7 +185,7 @@ $titulos = [
                     $editableSol = in_array($s['estado'], ['CREADA', 'REVISION'], true);
                     ?>
                     <div class="cli-item">
-                        <a class="cli-main" href="<?= base_url($slug . '/portal/cliente/' . $s['cliente_id']) ?>">
+                        <a class="cli-main pz-notch" href="<?= base_url($slug . '/portal/cliente/' . $s['cliente_id']) ?>">
                             <span class="cli-avatar"><?= esc($iniS !== '' ? $iniS : '?') ?></span>
                             <span class="cli-info">
                                 <span class="cli-nombre">
@@ -198,6 +198,7 @@ $titulos = [
                                 <?php endif; ?>
                             </span>
                             <span class="badge <?= $stCls[$s['estado']] ?? '' ?>"><?= esc($s['estado']) ?></span>
+                            <span class="pz-pin"><?= icon('chevron-right', 17) ?></span>
                         </a>
                         <?php if ($editableSol): ?>
                             <a class="cli-act" href="<?= base_url($slug . '/portal/solicitud/' . $s['id'] . '/editar') ?>">
@@ -374,7 +375,7 @@ $titulos = [
                         </div>
                         <?php foreach ($cr['_pend'] as $cuo): ?>
                             <form method="post" action="<?= base_url($slug . '/portal/cobros/' . $cr['id'] . '/abonar') ?>"
-                                  class="oui-list-item" style="border-top:1px solid var(--border,#e5e7eb);"
+                                  class="oui-list-item pz-notch go" style="margin-top:8px;"
                                   onsubmit="return confirm('¿Registrar cobro de <?= esc($m2,'attr') ?>' + (this.monto.value || 0) + '? Queda en revisión hasta que oficina lo confirme.');">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="cuota_id" value="<?= (int) $cuo['id'] ?>">
@@ -385,8 +386,8 @@ $titulos = [
                                     <span class="oui-sub">Pendiente <?= esc($m2) ?> <?= number_format($cuo['pendiente'], 0) ?><?= $cuo['vencida'] ? ' · Vencida' : '' ?></span>
                                 </span>
                                 <input type="number" name="monto" step="0.01" min="0.01" required
-                                       value="<?= esc($cuo['pendiente']) ?>" style="width:88px; padding:6px 8px;">
-                                <button class="btn btn-primary btn-sm"><?= icon('check', 14) ?> Cobrar</button>
+                                       value="<?= esc($cuo['pendiente']) ?>" style="width:80px; padding:6px 8px; margin-right:44px;">
+                                <button class="pz-btn" title="Cobrar"><?= icon('check', 18) ?></button>
                             </form>
                         <?php endforeach; ?>
                     </div>
