@@ -262,6 +262,7 @@ $routes->post('credito/solicitudes', 'SolicitudController::guardar', ['filter' =
     $routes->get('finanzas/recuperacion', 'PagoController::recuperacion',   ['filter' => 'auth:pagos.ver']);
     $routes->get('finanzas/pagos-dia',    'PagoController::pagosDia',       ['filter' => 'auth:pagos.ver']);
     $routes->get('finanzas/reporte',      'ReporteController::finanzas',    ['filter' => 'auth:reportes.ver']);
+    $routes->get('finanzas/flujo',        'ReporteController::flujo',       ['filter' => 'auth:reportes.ver']);
 
     // Herramientas — calculadora de cuotas y generador de documentación
     $routes->get('herramientas/calculadora',  'HerramientasController::calculadora');

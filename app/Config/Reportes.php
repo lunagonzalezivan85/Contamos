@@ -63,6 +63,15 @@ class Reportes extends BaseConfig
             'cat'         => 'Finanzas',
             'kw'          => ['pagos', 'dia', 'cobros', 'capital', 'interes', 'mora', 'desglose', 'diario'],
         ],
+        'finanzas.flujo' => [
+            'nombre'      => 'Ingresos vs egresos',
+            'descripcion' => 'Comparativo del periodo: pagos, otros ingresos, desembolsos y gastos con resultado positivo o negativo.',
+            'icono'       => 'trending-up',
+            'url'         => '/finanzas/flujo',
+            'permiso'     => 'reportes.ver',
+            'cat'         => 'Finanzas',
+            'kw'          => ['flujo', 'caja', 'comparativo', 'ingresos', 'egresos', 'gastos', 'desembolsos', 'positivo', 'negativo', 'resultado', 'balance'],
+        ],
         'finanzas.recuperacion' => [
             'nombre'      => 'Recuperación de cartera',
             'descripcion' => 'Cuotas vencidas pendientes por gestor para gestión de cobro.',

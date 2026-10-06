@@ -156,6 +156,75 @@ class ReporteService
     }
 
     /**
+     * Flujo de caja del periodo para /finanzas/flujo: todos los movimientos
+     * registrados — pagos de cobro (vigentes), otros ingresos, desembolsos
+     * entregados (fecha_entrega = egreso real) y gastos — con el neto para
+     * ver si el periodo salió en positivo o en negativo.
+     */
+    public function flujo(int $tenantId, string $desde, string $hasta): array
+    {
+        $ini = $desde . ' 00:00:00';
+        $fin = $hasta . ' 23:59:59';
+
+        // INGRESO · pagos registrados por cobro de crédito (revisión + aplicado)
+        $pagos = $this->db->table('pagos pg')
+            ->select('pg.id, pg.fecha_hora, pg.monto, pg.metodo, pg.estado,
+                      s.codigo_credito, p.nombres, p.apellidos', false)
+            ->join('solicitudes s', 's.id = pg.solicitud_id')
+            ->join('clientes c', 'c.id = s.cliente_id')
+            ->join('personas p', 'p.id = c.persona_id')
+            ->where('pg.tenant_id', $tenantId)
+            ->where('pg.tipo', 'PAGO')->whereIn('pg.estado', ['REVISION', 'APLICADO'])
+            ->where('pg.fecha_hora >=', $ini)->where('pg.fecha_hora <=', $fin)
+            ->orderBy('pg.fecha_hora', 'DESC')
+            ->get()->getResultArray();
+
+        // INGRESO · otros ingresos registrados (venta, donación, otro)
+        $ingresos = $this->db->table('ingresos')
+            ->select('fecha, tipo, concepto, monto, metodo')
+            ->where('tenant_id', $tenantId)->where('estado', 'ACTIVO')
+            ->where('fecha >=', $desde)->where('fecha <=', $hasta)
+            ->orderBy('fecha', 'DESC')
+            ->get()->getResultArray();
+
+        // EGRESO · desembolsos entregados (fecha_entrega = cuando salió el dinero)
+        $desembolsos = $this->db->table('solicitudes s')
+            ->select('s.id, s.fecha_entrega, s.monto_aprobado, s.monto, s.codigo_credito,
+                      p.nombres, p.apellidos', false)
+            ->join('clientes c', 'c.id = s.cliente_id')
+            ->join('personas p', 'p.id = c.persona_id')
+            ->where('s.tenant_id', $tenantId)
+            ->whereIn('s.estado', ['ACTIVO', 'LIQUIDADO'])
+            ->where('s.fecha_entrega >=', $ini)->where('s.fecha_entrega <=', $fin)
+            ->orderBy('s.fecha_entrega', 'DESC')
+            ->get()->getResultArray();
+
+        // EGRESO · gastos registrados
+        $gastos = $this->db->table('gastos g')
+            ->select('g.fecha, g.concepto, g.monto, g.metodo, gc.nombre AS categoria', false)
+            ->join('gasto_categorias gc', 'gc.id = g.categoria_id', 'left')
+            ->where('g.tenant_id', $tenantId)->where('g.estado', 'ACTIVO')
+            ->where('g.fecha >=', $desde)->where('g.fecha <=', $hasta)
+            ->orderBy('g.fecha', 'DESC')
+            ->get()->getResultArray();
+
+        $tPag = array_sum(array_column($pagos, 'monto'));
+        $tIng = array_sum(array_column($ingresos, 'monto'));
+        $tDes = array_sum(array_map(fn($d) => (float) ($d['monto_aprobado'] ?: $d['monto']), $desembolsos));
+        $tGas = array_sum(array_column($gastos, 'monto'));
+
+        return [
+            'pagos'       => $pagos,      'ingresos'    => $ingresos,
+            'desembolsos' => $desembolsos, 'gastos'     => $gastos,
+            't_pagos'     => round($tPag, 2), 't_ingresos'    => round($tIng, 2),
+            't_desembolsos' => round($tDes, 2), 't_gastos'      => round($tGas, 2),
+            'tot_ing' => round($tPag + $tIng, 2),
+            'tot_egr' => round($tDes + $tGas, 2),
+            'neto'    => round($tPag + $tIng - $tDes - $tGas, 2),
+        ];
+    }
+
+    /**
      * Tabla de clasificación de cartera (norma CONAMI para EMIF):
      * [categoría, días_mín, días_máx (null = sin techo), % provisión sobre saldo capital].
      * Editable si la norma vigente cambia los rangos o tasas.

@@ -66,6 +66,88 @@ class ReporteController extends BaseController
     }
 
     /**
+     * GET /finanzas/flujo?desde=YYYY-MM-DD&hasta=YYYY-MM-DD
+     * Comparativo ingresos vs egresos: pagos registrados + otros ingresos
+     * contra desembolsos entregados + gastos → resultado del periodo.
+     * ?exportar=excel descarga CSV (se abre directo en Excel).
+     */
+    public function flujo()
+    {
+        $tenantId = (int) session('tenant_id');
+        [$desde, $hasta] = $this->rango();
+        $data = $this->svc->flujo($tenantId, $desde, $hasta);
+        $mon  = (new PagoService())->moneda($tenantId);
+
+        if ($this->request->getGet('exportar') === 'excel') {
+            return $this->flujoCsv($data, $desde, $hasta, $mon);
+        }
+
+        return view('partner/reportes/flujo', [
+            'title' => 'Ingresos vs egresos - Contamos',
+            'data'  => $data,
+            'desde' => $desde,
+            'hasta' => $hasta,
+            'mon'   => $mon,
+        ]);
+    }
+
+    /** CSV del comparativo ingresos vs egresos (BOM UTF-8 + ; para Excel). */
+    private function flujoCsv(array $d, string $desde, string $hasta, string $mon)
+    {
+        $q = fn ($s) => '"' . str_replace('"', '""', (string) $s) . '"';
+        $n = fn ($v) => number_format((float) $v, 2, '.', '');
+        $lbl = \App\Models\IngresoModel::TIPOS;
+
+        $out  = "\xEF\xBB\xBF";
+        $out .= "Flujo de caja — {$desde} a {$hasta} ({$mon})\r\n\r\n";
+        $out .= "RESUMEN\r\nConcepto;Registros;Monto\r\n";
+        $out .= "Pagos registrados;" . count($d['pagos']) . ';' . $n($d['t_pagos']) . "\r\n";
+        $out .= "Otros ingresos;" . count($d['ingresos']) . ';' . $n($d['t_ingresos']) . "\r\n";
+        $out .= "Total ingresos;;" . $n($d['tot_ing']) . "\r\n";
+        $out .= "Desembolsos entregados;" . count($d['desembolsos']) . ';' . $n($d['t_desembolsos']) . "\r\n";
+        $out .= "Gastos;" . count($d['gastos']) . ';' . $n($d['t_gastos']) . "\r\n";
+        $out .= "Total egresos;;" . $n($d['tot_egr']) . "\r\n";
+        $out .= "RESULTADO;;" . $n($d['neto']) . ' ' . ($d['neto'] >= 0 ? 'POSITIVO' : 'NEGATIVO') . "\r\n\r\n";
+
+        $out .= "PAGOS REGISTRADOS\r\nFecha;Cliente;Crédito;Método;Estado;Monto\r\n";
+        foreach ($d['pagos'] as $p) {
+            $out .= implode(';', [
+                date('d/m/Y', strtotime($p['fecha_hora'])),
+                $q(trim(($p['nombres'] ?? '') . ' ' . ($p['apellidos'] ?? ''))),
+                $q($p['codigo_credito'] ?? ''), $p['metodo'], $p['estado'], $n($p['monto']),
+            ]) . "\r\n";
+        }
+        $out .= "\r\nOTROS INGRESOS\r\nFecha;Tipo;Concepto;Método;Monto\r\n";
+        foreach ($d['ingresos'] as $x) {
+            $out .= implode(';', [
+                date('d/m/Y', strtotime($x['fecha'])),
+                $lbl[$x['tipo']] ?? $x['tipo'], $q($x['concepto']), $x['metodo'], $n($x['monto']),
+            ]) . "\r\n";
+        }
+        $out .= "\r\nDESEMBOLSOS ENTREGADOS\r\nFecha;Cliente;Crédito;Monto\r\n";
+        foreach ($d['desembolsos'] as $x) {
+            $out .= implode(';', [
+                date('d/m/Y', strtotime($x['fecha_entrega'])),
+                $q(trim(($x['nombres'] ?? '') . ' ' . ($x['apellidos'] ?? ''))),
+                $q($x['codigo_credito'] ?: '#' . $x['id']),
+                $n($x['monto_aprobado'] ?: $x['monto']),
+            ]) . "\r\n";
+        }
+        $out .= "\r\nGASTOS\r\nFecha;Categoría;Concepto;Método;Monto\r\n";
+        foreach ($d['gastos'] as $x) {
+            $out .= implode(';', [
+                date('d/m/Y', strtotime($x['fecha'])),
+                $q($x['categoria'] ?? 'Sin categoría'), $q($x['concepto']), $x['metodo'], $n($x['monto']),
+            ]) . "\r\n";
+        }
+
+        return $this->response
+            ->setHeader('Content-Type', 'text/csv; charset=UTF-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="flujo-' . $desde . '_' . $hasta . '.csv"')
+            ->setBody($out);
+    }
+
+    /**
      * GET /credito/reporte-conami?corte=YYYY-MM-DD
      * Clasificación de cartera por riesgo según norma CONAMI + provisión.
      * ?exportar=excel descarga CSV (se abre directo en Excel).
