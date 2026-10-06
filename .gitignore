@@ -150,3 +150,5 @@ deploy.config.ps1
 # Temporales del purge de credenciales
 .purge-secrets.txt
 .purge-sed.sed
+
+.playwright-mcp/
