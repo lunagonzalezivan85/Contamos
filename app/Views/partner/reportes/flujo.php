@@ -71,58 +71,153 @@ $qs   = 'desde=' . $desde . '&hasta=' . $hasta;
     </div>
 </div>
 
-<!-- Movimientos del periodo — tabs Entradas / Salidas -->
-<div class="card">
-    <div class="tabs">
-        <button type="button" class="tab-btn on" data-tab="ent">
-            <?= icon('trending-up', 15) ?> Entradas (<?= count($d['entradas']) ?>)
-        </button>
-        <button type="button" class="tab-btn" data-tab="sal">
-            <?= icon('trending-down', 15) ?> Salidas (<?= count($d['salidas']) ?>)
-        </button>
-    </div>
+<!-- Tabs: resumen unificado / detalle por tipo -->
+<div class="tabs">
+    <button type="button" class="tab-btn on" data-tab="mov">
+        <?= icon('activity', 15) ?> Movimientos (<?= count($d['movimientos']) ?>)
+    </button>
+    <button type="button" class="tab-btn" data-tab="det">
+        <?= icon('file-text', 15) ?> Detalle por tipo
+    </button>
+</div>
 
-    <!-- Entradas: pagos registrados + otros ingresos -->
-    <div class="tab-panel on" data-panel="ent">
+<!-- Tab 1 · Movimientos: Fecha | Descripción | Entrada | Salida -->
+<div class="tab-panel on" data-panel="mov">
+    <div class="card" style="padding:0; overflow:hidden;">
         <div class="table-wrap">
             <table class="tbl">
-                <thead><tr><th>Fecha</th><th>Descripción</th><th style="text-align:right;">Monto de entrada</th></tr></thead>
+                <thead><tr><th>Fecha</th><th>Descripción</th>
+                    <th style="text-align:right;">Monto de entrada</th>
+                    <th style="text-align:right;">Monto de salida</th></tr></thead>
                 <tbody>
-                <?php if (empty($d['entradas'])): ?>
-                    <tr><td colspan="3" class="card-subtitle">Sin ingresos en el periodo.</td></tr>
+                <?php if (empty($d['movimientos'])): ?>
+                    <tr><td colspan="4" class="card-subtitle">Sin movimientos en el periodo.</td></tr>
                 <?php endif; ?>
-                <?php foreach ($d['entradas'] as $e): ?>
+                <?php foreach ($d['movimientos'] as $e): ?>
                     <tr>
                         <td style="white-space:nowrap;"><?= esc(date('d/m/Y', strtotime($e['fecha']))) ?></td>
                         <td><?= esc($e['desc']) ?></td>
-                        <td style="text-align:right; font-weight:700; color:var(--primary-dark);">+ <?= esc($m2) ?> <?= number_format($e['monto'], 2) ?></td>
+                        <td style="text-align:right; font-weight:700; color:<?= $e['ent'] > 0 ? 'var(--primary-dark)' : 'var(--text-muted)' ?>;">
+                            <?= $e['ent'] > 0 ? '+ ' . esc($m2) . ' ' . number_format($e['ent'], 2) : '—' ?>
+                        </td>
+                        <td style="text-align:right; font-weight:700; color:<?= $e['sal'] > 0 ? '#B42318' : 'var(--text-muted)' ?>;">
+                            <?= $e['sal'] > 0 ? '− ' . esc($m2) . ' ' . number_format($e['sal'], 2) : '—' ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
-                <tfoot><tr><th colspan="2">Total entradas</th><th style="text-align:right;"><?= esc($m2) ?> <?= number_format($d['tot_ing'], 2) ?></th></tr></tfoot>
+                <tfoot><tr><th colspan="2">Totales del periodo</th>
+                    <th style="text-align:right; color:var(--primary-dark);"><?= esc($m2) ?> <?= number_format($d['tot_ing'], 2) ?></th>
+                    <th style="text-align:right; color:#B42318;"><?= esc($m2) ?> <?= number_format($d['tot_egr'], 2) ?></th></tr></tfoot>
             </table>
         </div>
     </div>
+</div>
 
-    <!-- Salidas: desembolsos + gastos -->
-    <div class="tab-panel" data-panel="sal">
-        <div class="table-wrap">
-            <table class="tbl">
-                <thead><tr><th>Fecha</th><th>Descripción</th><th style="text-align:right;">Monto de salida</th></tr></thead>
-                <tbody>
-                <?php if (empty($d['salidas'])): ?>
-                    <tr><td colspan="3" class="card-subtitle">Sin egresos en el periodo.</td></tr>
-                <?php endif; ?>
-                <?php foreach ($d['salidas'] as $e): ?>
-                    <tr>
-                        <td style="white-space:nowrap;"><?= esc(date('d/m/Y', strtotime($e['fecha']))) ?></td>
-                        <td><?= esc($e['desc']) ?></td>
-                        <td style="text-align:right; font-weight:700; color:#B42318;">− <?= esc($m2) ?> <?= number_format($e['monto'], 2) ?></td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-                <tfoot><tr><th colspan="2">Total salidas</th><th style="text-align:right;"><?= esc($m2) ?> <?= number_format($d['tot_egr'], 2) ?></th></tr></tfoot>
-            </table>
+<!-- Tab 2 · Detalle por tipo: las 4 cards -->
+<div class="tab-panel" data-panel="det">
+    <div class="grid-2" style="margin-top:0;">
+        <!-- Pagos registrados -->
+        <div class="card">
+            <h4 class="card-title"><?= icon('credit-card', 16) ?> Pagos registrados</h4>
+            <p class="card-subtitle">Cobros de crédito vigentes (revisión + aplicados).</p>
+            <div class="table-wrap">
+                <table class="tbl">
+                    <thead><tr><th>Fecha</th><th>Cliente</th><th>Estado</th><th style="text-align:right;">Monto</th></tr></thead>
+                    <tbody>
+                    <?php if (empty($d['pagos'])): ?>
+                        <tr><td colspan="4" class="card-subtitle">Sin pagos en el periodo.</td></tr>
+                    <?php endif; ?>
+                    <?php foreach ($d['pagos'] as $p): ?>
+                        <tr>
+                            <td style="white-space:nowrap;"><?= esc(date('d/m/Y', strtotime($p['fecha_hora']))) ?></td>
+                            <td>
+                                <?= esc(trim(($p['nombres'] ?? '') . ' ' . ($p['apellidos'] ?? ''))) ?>
+                                <span class="card-subtitle" style="display:block;"><?= esc($p['codigo_credito'] ?? '') ?> · <?= esc(ucfirst(strtolower($p['metodo']))) ?></span>
+                            </td>
+                            <td><span class="badge <?= $p['estado'] === 'APLICADO' ? 'st-ok' : 'st-warn' ?>"><?= esc(\App\Models\PagoModel::LABEL_ESTADO[$p['estado']] ?? $p['estado']) ?></span></td>
+                            <td style="text-align:right; font-weight:700; color:var(--primary-dark);">+ <?= esc($m2) ?> <?= number_format((float) $p['monto'], 2) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                    <tfoot><tr><th colspan="3">Total pagos</th><th style="text-align:right;"><?= esc($m2) ?> <?= number_format($d['t_pagos'], 2) ?></th></tr></tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Otros ingresos -->
+        <div class="card">
+            <h4 class="card-title"><?= icon('trending-up', 16) ?> Otros ingresos</h4>
+            <p class="card-subtitle">Ventas, donaciones y otros registrados.</p>
+            <div class="table-wrap">
+                <table class="tbl">
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th style="text-align:right;">Monto</th></tr></thead>
+                    <tbody>
+                    <?php if (empty($d['ingresos'])): ?>
+                        <tr><td colspan="4" class="card-subtitle">Sin otros ingresos en el periodo.</td></tr>
+                    <?php endif; ?>
+                    <?php foreach ($d['ingresos'] as $x): ?>
+                        <tr>
+                            <td style="white-space:nowrap;"><?= esc(date('d/m/Y', strtotime($x['fecha']))) ?></td>
+                            <td><?= esc($x['concepto']) ?></td>
+                            <td><span class="badge badge-soft"><?= esc(\App\Models\IngresoModel::TIPOS[$x['tipo']] ?? $x['tipo']) ?></span></td>
+                            <td style="text-align:right; font-weight:700; color:var(--primary-dark);">+ <?= esc($m2) ?> <?= number_format((float) $x['monto'], 2) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                    <tfoot><tr><th colspan="3">Total otros ingresos</th><th style="text-align:right;"><?= esc($m2) ?> <?= number_format($d['t_ingresos'], 2) ?></th></tr></tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Desembolsos -->
+        <div class="card">
+            <h4 class="card-title"><?= icon('dollar-sign', 16) ?> Desembolsos entregados</h4>
+            <p class="card-subtitle">Dinero entregado a clientes en el periodo.</p>
+            <div class="table-wrap">
+                <table class="tbl">
+                    <thead><tr><th>Fecha</th><th>Cliente</th><th>Crédito</th><th style="text-align:right;">Monto</th></tr></thead>
+                    <tbody>
+                    <?php if (empty($d['desembolsos'])): ?>
+                        <tr><td colspan="4" class="card-subtitle">Sin desembolsos en el periodo.</td></tr>
+                    <?php endif; ?>
+                    <?php foreach ($d['desembolsos'] as $x): ?>
+                        <tr>
+                            <td style="white-space:nowrap;"><?= esc(date('d/m/Y', strtotime($x['fecha_entrega']))) ?></td>
+                            <td><?= esc(trim(($x['nombres'] ?? '') . ' ' . ($x['apellidos'] ?? ''))) ?></td>
+                            <td><?= esc($x['codigo_credito'] ?: '#' . $x['id']) ?></td>
+                            <td style="text-align:right; font-weight:700; color:#B42318;">− <?= esc($m2) ?> <?= number_format((float) ($x['monto_aprobado'] ?: $x['monto']), 2) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                    <tfoot><tr><th colspan="3">Total desembolsos</th><th style="text-align:right;"><?= esc($m2) ?> <?= number_format($d['t_desembolsos'], 2) ?></th></tr></tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Gastos -->
+        <div class="card">
+            <h4 class="card-title"><?= icon('trending-down', 16) ?> Gastos</h4>
+            <p class="card-subtitle">Egresos registrados en el módulo de gastos.</p>
+            <div class="table-wrap">
+                <table class="tbl">
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th style="text-align:right;">Monto</th></tr></thead>
+                    <tbody>
+                    <?php if (empty($d['gastos'])): ?>
+                        <tr><td colspan="4" class="card-subtitle">Sin gastos en el periodo.</td></tr>
+                    <?php endif; ?>
+                    <?php foreach ($d['gastos'] as $x): ?>
+                        <tr>
+                            <td style="white-space:nowrap;"><?= esc(date('d/m/Y', strtotime($x['fecha']))) ?></td>
+                            <td><?= esc($x['concepto']) ?></td>
+                            <td><span class="badge badge-soft"><?= esc($x['categoria'] ?? 'Sin categoría') ?></span></td>
+                            <td style="text-align:right; font-weight:700; color:#B42318;">− <?= esc($m2) ?> <?= number_format((float) $x['monto'], 2) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                    <tfoot><tr><th colspan="3">Total gastos</th><th style="text-align:right;"><?= esc($m2) ?> <?= number_format($d['t_gastos'], 2) ?></th></tr></tfoot>
+                </table>
+            </div>
         </div>
     </div>
 </div>

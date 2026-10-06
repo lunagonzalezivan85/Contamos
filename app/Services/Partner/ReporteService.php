@@ -213,37 +213,35 @@ class ReporteService
         $tDes = array_sum(array_map(fn($d) => (float) ($d['monto_aprobado'] ?: $d['monto']), $desembolsos));
         $tGas = array_sum(array_column($gastos, 'monto'));
 
-        // Movimientos unificados para las pestañas Entrada / Salida
-        // (formato pedido: descripción + monto de entrada o salida).
+        // Movimientos unificados — formato pedido: fecha, descripción y
+        // el monto en columna de entrada o de salida según el tipo.
         $lblTipo = ['VENTA' => 'Venta', 'DONACION' => 'Donación', 'OTRO' => 'Otro'];
-        $entradas = $salidas = [];
+        $movs = [];
         foreach ($pagos as $p) {
-            $entradas[] = ['fecha' => substr($p['fecha_hora'], 0, 10), 'monto' => (float) $p['monto'],
+            $movs[] = ['fecha' => substr($p['fecha_hora'], 0, 10), 'ent' => (float) $p['monto'], 'sal' => 0.0,
                 'desc' => 'Cobro · ' . trim(($p['nombres'] ?? '') . ' ' . ($p['apellidos'] ?? '')) .
                           ($p['codigo_credito'] ? ' · ' . $p['codigo_credito'] : '')];
         }
         foreach ($ingresos as $x) {
-            $entradas[] = ['fecha' => $x['fecha'], 'monto' => (float) $x['monto'],
+            $movs[] = ['fecha' => $x['fecha'], 'ent' => (float) $x['monto'], 'sal' => 0.0,
                 'desc' => $x['concepto'] . ' · ' . ($lblTipo[$x['tipo']] ?? $x['tipo'])];
         }
         foreach ($desembolsos as $x) {
-            $salidas[] = ['fecha' => substr($x['fecha_entrega'], 0, 10),
-                'monto' => (float) ($x['monto_aprobado'] ?: $x['monto']),
+            $movs[] = ['fecha' => substr($x['fecha_entrega'], 0, 10), 'ent' => 0.0,
+                'sal' => (float) ($x['monto_aprobado'] ?: $x['monto']),
                 'desc' => 'Desembolso · ' . trim(($x['nombres'] ?? '') . ' ' . ($x['apellidos'] ?? '')) .
                           ' · ' . ($x['codigo_credito'] ?: '#' . $x['id'])];
         }
         foreach ($gastos as $x) {
-            $salidas[] = ['fecha' => $x['fecha'], 'monto' => (float) $x['monto'],
+            $movs[] = ['fecha' => $x['fecha'], 'ent' => 0.0, 'sal' => (float) $x['monto'],
                 'desc' => $x['concepto'] . ($x['categoria'] ? ' · ' . $x['categoria'] : '')];
         }
-        $porFecha = fn($a, $b) => strcmp($b['fecha'], $a['fecha']);
-        usort($entradas, $porFecha);
-        usort($salidas, $porFecha);
+        usort($movs, fn($a, $b) => strcmp($b['fecha'], $a['fecha']));
 
         return [
             'pagos'       => $pagos,      'ingresos'    => $ingresos,
             'desembolsos' => $desembolsos, 'gastos'     => $gastos,
-            'entradas'    => $entradas,   'salidas'     => $salidas,
+            'movimientos' => $movs,
             't_pagos'     => round($tPag, 2), 't_ingresos'    => round($tIng, 2),
             't_desembolsos' => round($tDes, 2), 't_gastos'      => round($tGas, 2),
             'tot_ing' => round($tPag + $tIng, 2),
