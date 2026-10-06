@@ -4,6 +4,29 @@ Registro de cambios por sesión. Más reciente arriba.
 
 ---
 
+## 2026-10-06 — Diseño puzzle en portal gestor + ruta con fecha + APK 1.4.0
+
+- **Diseño "puzzle" (notch) en el portal del gestor** — sistema `.pz-notch`
+  en `portal.css`: el corte circular se dibuja en `::before` (mask) así los
+  hijos no se recortan; el botón/pin circular queda encajado en el hueco.
+  Aplicado a: wizard de Nueva solicitud (piezas encajadas, mismo JS
+  `.on`/`.done`), filas de Cobros→Por cobrar (botón ✓ encajado),
+  Desembolso (✓ Entregado), Cartera y Actividad (pin chevron), y el
+  selector de cliente con pin verde / ✕ al elegir. Paleta Contamos intacta.
+- **Recuperación con barra de cumplimiento** — stat-card "Total por
+  recuperar" lleva `.prog` con % cobrado del día (pagos vigentes
+  `DATE(fecha_hora)=fecha`) vs meta (cobrado + pendiente).
+- **Exportar a Excel** (`?exportar=excel`, CSV `;`+BOM) en Pagos del día y
+  Recuperación — respeta fecha y filtro; incluye fila de totales.
+- **Separación stats↔tabla** — `.stats-grid + .card { margin-top:20px }`.
+- **App: selector de fecha en Ruta de cobro** — fila ◄ [fecha] ► + botón
+  "Hoy"; usa `connect/ruta?fecha=` ya existente. `api.js ruta(fecha)`.
+- **APK 1.4.0 (versionCode 6)** compilado (`assembleDebug`, misma firma
+  debug que versiones previas → actualiza sin desinstalar) y publicado en
+  `public/app/`; `version.json` actualizado. Incluye lo acumulado:
+  recibos, cobros del día reimprimibles y ruta con fecha.
+- `.gitignore` + `.playwright-mcp/` (snapshots locales de QA).
+
 ## 2026-10-05 (PM2) — Fix update-check de la app + reporte Pagos del día
 
 - **La app ya detecta versiones nuevas** — causa: `checkUpdate()` hacía
