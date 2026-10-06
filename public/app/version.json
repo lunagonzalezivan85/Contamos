@@ -1,6 +1,6 @@
 {
-    "versionCode": 5,
-    "versionName": "1.3.0",
+    "versionCode": 6,
+    "versionName": "1.4.0",
     "url": "descargar/apk",
-    "mensaje": "Bloqueo fuera del horario laboral (pantalla estilo Family Link)."
+    "mensaje": "Ruta de cobro con selector de fecha, recibo con compartir, cobros del día reimprimibles y mejoras visuales."
 }
