@@ -114,6 +114,21 @@ class LandingController extends BaseController
     }
 
     /**
+     * GET /_opreset?k=<clave> — invalida OPcache del server tras un deploy
+     * (site4now sirve PHP cacheado un rato y el código nuevo no se ve).
+     * Protegido con clave para que no lo ejecute cualquiera.
+     */
+    public function opReset()
+    {
+        if ($this->request->getGet('k') !== 'op-2026-cf') {
+            return $this->response->setStatusCode(404)->setBody('');
+        }
+        return $this->response->setBody(
+            function_exists('opcache_reset') ? (opcache_reset() ? 'reset-ok' : 'reset-fail') : 'sin-opcache'
+        );
+    }
+
+    /**
      * POST /solicitar-acceso — formulario "Solicita tu usuario" de la landing
      */
     public function solicitarAcceso()
