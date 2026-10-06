@@ -131,6 +131,10 @@ class PagoController extends BaseController
         }
         $data = $this->svc->pagosDelDia($tenantId, $fecha);
 
+        if ($this->request->getGet('exportar') === 'excel') {
+            return $this->pagosDiaCsv($data, $fecha, $this->svc->moneda($tenantId));
+        }
+
         return view('partner/reportes/pagos_dia', [
             'title'     => 'Pagos del día - Contamos',
             'rows'      => $data['rows'],
@@ -150,6 +154,10 @@ class PagoController extends BaseController
         $fecha    = trim((string) $this->request->getGet('fecha'));
         $data     = $this->svc->recuperacion($tenantId, $buscar, $fecha);
 
+        if ($this->request->getGet('exportar') === 'excel') {
+            return $this->recuperacionCsv($data, $this->svc->moneda($tenantId));
+        }
+
         return view('partner/finanzas/recuperacion', [
             'title' => 'Recuperación - Contamos',
             'filas' => $data['rows'],
@@ -159,6 +167,67 @@ class PagoController extends BaseController
             'buscar'=> $buscar,
             'mon'   => $this->svc->moneda($tenantId),
         ]);
+    }
+
+    /** CSV del reporte Pagos del día (BOM UTF-8 + ; para Excel en español). */
+    private function pagosDiaCsv(array $d, string $fecha, string $mon)
+    {
+        $q = fn ($s) => '"' . str_replace('"', '""', (string) $s) . '"';
+        $n = fn ($v) => number_format((float) $v, 2, '.', '');
+
+        $out  = "\xEF\xBB\xBF";
+        $out .= "Pagos del día — {$fecha} ({$mon})\r\n";
+        $out .= 'Cliente;N° Crédito;Gestor;Método;Capital;Interés;Mora;Total;Estado' . "\r\n";
+        foreach ($d['rows'] as $r) {
+            $out .= implode(';', [
+                $q(trim(($r['nombres'] ?? '') . ' ' . ($r['apellidos'] ?? ''))),
+                $q($r['codigo_credito'] ?: '#' . $r['solicitud_id']),
+                $q(trim(($r['gestor_n'] ?? '') . ' ' . ($r['gestor_a'] ?? '')) ?: 'Oficina'),
+                $q(PagoModel::METODOS_LBL[$r['metodo']] ?? $r['metodo']),
+                $n($r['capital']) . (!empty($r['estimado']) ? '*' : ''),
+                $n($r['interes']) . (!empty($r['estimado']) ? '*' : ''),
+                $n($r['mora']),
+                $n($r['monto']),
+                $q(PagoModel::LABEL_ESTADO[$r['estado']] ?? $r['estado']),
+            ]) . "\r\n";
+        }
+        $t = $d['totales'];
+        $out .= implode(';', ['TOTALES', '', '', '', $n($t['capital']), $n($t['interes']),
+            $n($t['mora']), $n($t['total']), '']) . "\r\n";
+
+        return $this->response
+            ->setHeader('Content-Type', 'text/csv; charset=UTF-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="pagos-dia-' . $fecha . '.csv"')
+            ->setBody($out);
+    }
+
+    /** CSV de recuperación de cartera (BOM UTF-8 + ; para Excel en español). */
+    private function recuperacionCsv(array $d, string $mon)
+    {
+        $q = fn ($s) => '"' . str_replace('"', '""', (string) $s) . '"';
+        $n = fn ($v) => number_format((float) $v, 2, '.', '');
+
+        $out  = "\xEF\xBB\xBF";
+        $out .= "Recuperación de cartera al {$d['hoy']} ({$mon})\r\n";
+        $out .= 'Cliente;Cédula;Teléfono;Crédito;Gestor;Cuotas pend.;Primera vencida;Saldo por cobrar;Días atraso' . "\r\n";
+        foreach ($d['rows'] as $r) {
+            $out .= implode(';', [
+                $q(trim(($r['nombres'] ?? '') . ' ' . ($r['apellidos'] ?? ''))),
+                $q($r['cedula'] ?? ''), $q($r['telefono'] ?? ''),
+                $q($r['codigo_credito'] ?: '#' . $r['solicitud_id']),
+                $q(trim(($r['gestor_nombres'] ?? '') . ' ' . ($r['gestor_apellidos'] ?? ''))),
+                (int) $r['cuotas_vencidas'],
+                date('d/m/Y', strtotime($r['primera_vencida'])),
+                $n($r['saldo_vencido']), (int) $r['dias_atraso'],
+            ]) . "\r\n";
+        }
+        $out .= implode(';', ['TOTAL', '', '', '', '', '', '',
+            $n($d['total_vencido']), '']) . "\r\n";
+
+        return $this->response
+            ->setHeader('Content-Type', 'text/csv; charset=UTF-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="recuperacion-' . $d['hoy'] . '.csv"')
+            ->setBody($out);
     }
 
     /** POST /pagos/{id}/revertir - genera el contra-pago negativo (queda en revisión). */

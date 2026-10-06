@@ -28,6 +28,8 @@ $t  = $totales ?? ['n' => 0, 'capital' => 0, 'interes' => 0, 'mora' => 0, 'total
                    title="Fecha de los cobros"
                    style="padding:7px 10px; border:1.5px solid #E2E8F0; border-radius:8px;">
             <button type="submit" class="btn btn-outline btn-sm">Ver</button>
+            <a class="btn btn-outline btn-sm"
+               href="<?= base_url('finanzas/pagos-dia') ?>?fecha=<?= esc($fecha) ?>&exportar=excel">Excel</a>
             <a class="btn btn-outline btn-sm" href="<?= base_url('finanzas/recuperacion') ?>">Por cobrar</a>
         </form>
     </div>
