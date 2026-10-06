@@ -31,28 +31,20 @@
         <div class="stat-num"><?= count($filas) ?></div>
         <div class="stat-lbl">Créditos por cobrar</div>
     </div>
+    <?php
+    $meta = (float) $cobrado + (float) $total;   // lo que había por cobrar al abrir el día
+    $pct  = $meta > 0 ? min(100, round((float) $cobrado / $meta * 100)) : 0;
+    ?>
     <div class="stat-card">
-        <div class="stat-num" style="color:#B42318;"><?= esc($m2) ?> <?= number_format($total, 2) ?></div>
-        <div class="stat-lbl">Total por recuperar</div>
+        <div class="stat-num" style="color:var(--primary-dark);"><?= esc($m2) ?> <?= number_format($total, 2) ?></div>
+        <div class="stat-lbl">Total por recuperar · <?= $pct ?>% recuperado</div>
+        <div class="prog" style="margin-top:12px;">
+            <div class="prog-fill" style="width:<?= $pct ?>%"></div>
+        </div>
+        <div class="stat-lbl" style="margin-top:6px;">
+            Cobrado <?= esc($m2) ?> <?= number_format((float) $cobrado, 2) ?> al <?= esc(date('d/m/Y', strtotime($hoy))) ?>
+        </div>
     </div>
-</div>
-
-<!-- Cumplimiento del día: cobrado vs por recuperar -->
-<?php
-$meta = (float) $cobrado + (float) $total;   // lo que estaba por cobrar al abrir el día
-$pct  = $meta > 0 ? min(100, round((float) $cobrado / $meta * 100)) : 0;
-?>
-<div class="card">
-    <div class="prog-head">
-        <span style="font-weight:700;">Cumplimiento al <?= esc(date('d/m/Y', strtotime($hoy))) ?></span>
-        <strong><?= $pct ?>%</strong>
-    </div>
-    <div class="prog"><div class="prog-fill" style="width:<?= $pct ?>%"></div></div>
-    <p class="card-subtitle" style="margin-top:8px;">
-        Cobrado <?= esc($m2) ?> <?= number_format((float) $cobrado, 2) ?>
-        de <?= esc($m2) ?> <?= number_format($meta, 2) ?> por recuperar.
-        <?php if ($pct >= 100): ?>Meta cumplida — todo recuperado.<?php endif; ?>
-    </p>
 </div>
 
 <!-- Listado -->
