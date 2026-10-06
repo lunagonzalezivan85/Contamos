@@ -98,6 +98,9 @@ $nota = [
         <div class="v-row"><span class="k">Método</span><span class="v"><?= esc($metodos[$p['metodo']] ?? $p['metodo']) ?></span></div>
         <div class="v-row"><span class="k">Recibió</span><span class="v"><?= esc($cobro) ?></span></div>
         <div class="v-row"><span class="k">Estado</span><span class="v"><?= esc($lblEstado[$est] ?? $est) ?></span></div>
+        <?php if (isset($saldo) && $saldo !== null): ?>
+            <div class="v-row"><span class="k">Saldo pendiente</span><span class="v"><?= esc($m2) ?> <?= number_format((float) $saldo, 2) ?></span></div>
+        <?php endif; ?>
         <?php if (!empty($p['observacion'])): ?>
             <div class="v-row"><span class="k">Nota</span><span class="v"><?= esc($p['observacion']) ?></span></div>
         <?php endif; ?>

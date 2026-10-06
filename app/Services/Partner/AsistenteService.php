@@ -28,12 +28,15 @@ class AsistenteService
     /* ── Créditos con cuotas vencidas (clientes en mora) ── */
     public function enMora(int $tenantId): array
     {
+        // Hoy en hora del negocio (PHP/appTimezone) — no CURDATE() de MySQL
+        // porque el server de BD puede correr en otra zona horaria.
+        $hoy  = $this->db->escape(date('Y-m-d'));
         $rows = $this->db->table('cuotas q')
             ->select('s.id, s.codigo_credito, p.nombres, p.apellidos,
                       gp.nombres AS gestor_n, gp.apellidos AS gestor_a,
                       COUNT(*) AS cuotas_vencidas,
                       SUM(q.cuota - q.pagado - q.descuento) AS pendiente,
-                      MAX(DATEDIFF(CURDATE(), q.fecha_vence)) AS dias_atraso', false)
+                      MAX(DATEDIFF(' . $hoy . ', q.fecha_vence)) AS dias_atraso', false)
             ->join('solicitudes s', 's.id = q.solicitud_id')
             ->join('clientes c', 'c.id = s.cliente_id')
             ->join('personas p', 'p.id = c.persona_id')

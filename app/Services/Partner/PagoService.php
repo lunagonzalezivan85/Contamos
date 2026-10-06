@@ -582,13 +582,19 @@ class PagoService
         return ['ok' => true, 'pago_id' => (int) $pagoId];
     }
 
-    /** Datos para el voucher del recibo: pago + cliente + crédito + tenant. */
+    /** Datos para el voucher del recibo: pago + cliente + crédito + tenant + saldo. */
     public function reciboPago(int $tenantId, int $pagoId): ?array
     {
         $pago = $this->pagos->recibo($tenantId, $pagoId);
         if (!$pago) return null;
         $tenant = (new \App\Models\TenantModel())->find($tenantId);
-        return ['pago' => $pago, 'tenant' => $tenant];
+
+        // Saldo vivo del crédito (cuotas pendientes). Si el pago sigue en
+        // REVISION aún no se descontó del plan — se muestra el saldo actual.
+        $sol   = $this->solicitudes->where('tenant_id', $tenantId)->find((int) $pago['solicitud_id']);
+        $saldo = $sol ? $this->saldoCredito($sol) : null;
+
+        return ['pago' => $pago, 'tenant' => $tenant, 'saldo' => $saldo];
     }
 
     /**

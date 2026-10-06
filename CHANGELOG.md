@@ -4,6 +4,24 @@ Registro de cambios por sesión. Más reciente arriba.
 
 ---
 
+## 2026-10-05 (PM) — TZ Nicaragua global + saldo en recibo + voucher en app
+
+- **`appTimezone = 'America/Managua'`** (`App.php`) — CI4 lo aplica a
+  `date_default_timezone_set()` → todos los `date()`/`now()`/`Time::` y los
+  timestamps de modelos (`created_at`, `fecha_hora`, etc.) ya salen en hora de
+  Nicaragua, no UTC del server. La única fecha que venía de MySQL
+  (`DATEDIFF(CURDATE()…)` en `AsistenteService::enMora`) ahora usa la fecha PHP.
+  `en_horario()`/`HorarioFilter` ya quedaban cubiertos por la TZ global.
+- **Saldo pendiente en el recibo** — `PagoService::reciboPago()` ahora devuelve
+  `saldo` (saldo vivo del crédito vía `saldoCredito`); el voucher imprimible
+  (`partner/pagos/recibo.php`) muestra la fila "Saldo pendiente" y el endpoint
+  `connect/cobros/{id}/recibo` la expone en `data.saldo`.
+- **La app genera recibo** — tras cobrar, `Cobros.jsx` muestra el voucher
+  completo (empresa, número, cliente, cédula, crédito, fecha/hora, método,
+  quién recibió, estado, monto y saldo pendiente) con botón **Compartir**
+  (`@capacitor/share` — texto plano listo para WhatsApp). Requiere
+  `npm install` + `cap sync` + rebuild del APK.
+
 ## 2026-10-05 — Selector de fecha en ruta de cobro del gestor
 
 - **`/{slug}/portal/mapa`** ahora acepta `?fecha=YYYY-MM-DD`: el gestor puede ver
