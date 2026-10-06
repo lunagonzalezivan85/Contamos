@@ -34,7 +34,10 @@ class LandingController extends BaseController
 
         // Versión vigente según el manifest — el mismo que consulta la app
         $mani  = FCPATH . 'app/version.json';
-        $v     = is_file($mani) ? (json_decode(file_get_contents($mani), true) ?: []) : [];
+        // El archivo puede venir con BOM UTF-8 — json_decode devuelve null con él
+        $v     = is_file($mani)
+            ? (json_decode(preg_replace('/^\xEF\xBB\xBF/', '', file_get_contents($mani)), true) ?: [])
+            : [];
         $vigente = $v['versionName'] ?? null;
 
         // Todas las APKs versionadas en public/app (contamos-gestor-X.Y.Z.apk)
@@ -102,7 +105,7 @@ class LandingController extends BaseController
     public function appVersion()
     {
         $f = FCPATH . 'app/version.json';
-        $v = is_file($f) ? json_decode(file_get_contents($f), true) : null;
+        $v = is_file($f) ? json_decode(preg_replace('/^\xEF\xBB\xBF/', '', file_get_contents($f)), true) : null;
         return $this->response
             ->setHeader('Access-Control-Allow-Origin', '*')
             ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
