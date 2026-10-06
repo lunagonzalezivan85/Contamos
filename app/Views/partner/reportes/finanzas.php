@@ -39,7 +39,7 @@ $neto = (float) $data['neto'];
     </div>
 </div>
 
-<div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+<div class="grid-2">
     <!-- Cobros por método -->
     <div class="card">
         <h4 class="card-title">Cobros por método</h4>

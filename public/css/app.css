@@ -532,6 +532,7 @@ a.chip-stat:hover { border-color: var(--primary); box-shadow: 0 4px 14px rgba(48
 }
 /* Aire entre las stat-cards y la tabla/card que les sigue */
 .stats-grid + .card { margin-top: 20px; }
+.card + .stats-grid { margin-top: 16px; }   /* y al revés: card de resultado → stats */
 
 /* Barra de progreso (cumplimiento de cobro, metas…) */
 .prog-head {
@@ -547,6 +548,10 @@ a.chip-stat:hover { border-color: var(--primary); box-shadow: 0 4px 14px rgba(48
     transition: width .5s ease; min-width: 0;
 }
 .prog-fill-out { background: #EF4444; }   /* egresos / salida de dinero */
+
+/* Grid de 2 columnas para cards de reportes → col-12 en móvil/tablet */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+@media (max-width: 980px) { .grid-2 { grid-template-columns: 1fr; } }
 
 .stat-card {
     background: var(--surface);

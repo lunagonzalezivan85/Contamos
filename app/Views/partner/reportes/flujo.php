@@ -40,7 +40,7 @@ $qs   = 'desde=' . $desde . '&hasta=' . $hasta;
 </div>
 
 <!-- Resumen + comparativo -->
-<div class="stats-grid" style="margin-top:16px;">
+<div class="stats-grid">
     <div class="stat-card">
         <div class="stat-num" style="color:var(--primary-dark);"><?= esc($m2) ?> <?= number_format($d['tot_ing'], 2) ?></div>
         <div class="stat-lbl">Ingresos totales</div>
@@ -74,7 +74,7 @@ $qs   = 'desde=' . $desde . '&hasta=' . $hasta;
 </div>
 
 <!-- Detalle de movimientos -->
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+<div class="grid-2">
     <!-- Pagos registrados -->
     <div class="card">
         <h4 class="card-title"><?= icon('credit-card', 16) ?> Pagos registrados</h4>
