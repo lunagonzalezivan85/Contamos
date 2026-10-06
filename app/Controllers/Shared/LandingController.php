@@ -94,6 +94,23 @@ class LandingController extends BaseController
     }
 
     /**
+     * GET /app-version — manifest del APK para la app del gestor.
+     * El archivo estático /public/app/version.json no lleva headers CORS:
+     * el WebView de Capacitor bloquea el fetch y la app nunca ve la
+     * actualización. Este endpoint lo sirve por PHP con CORS + no-cache.
+     */
+    public function appVersion()
+    {
+        $f = FCPATH . 'app/version.json';
+        $v = is_file($f) ? json_decode(file_get_contents($f), true) : null;
+        return $this->response
+            ->setHeader('Access-Control-Allow-Origin', '*')
+            ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+            ->setStatusCode($v ? 200 : 404)
+            ->setJSON($v ?: ['ok' => false, 'error' => 'Sin manifest']);
+    }
+
+    /**
      * POST /solicitar-acceso — formulario "Solicita tu usuario" de la landing
      */
     public function solicitarAcceso()

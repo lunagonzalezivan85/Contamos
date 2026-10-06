@@ -115,6 +115,7 @@ class Menu extends BaseConfig
                 ['nombre' => 'Gastos',       'icono' => 'minus-circle', 'url' => '/finanzas/gastos',       'permiso' => 'caja.gastos'],
                 ['nombre' => 'Metas',        'icono' => 'target',       'url' => '/finanzas/metas',        'permiso' => 'metas.plan'],
                 ['nombre' => 'Recuperación', 'icono' => 'refresh-cw',   'url' => '/finanzas/recuperacion', 'permiso' => 'pagos.ver'],
+                ['nombre' => 'Pagos del día','icono' => 'calendar',     'url' => '/finanzas/pagos-dia',    'permiso' => 'pagos.ver'],
                 ['nombre' => 'Reporte',      'icono' => 'bar-chart-2',  'url' => '/finanzas/reporte',      'permiso' => 'reportes.ver'],
             ],
         ],

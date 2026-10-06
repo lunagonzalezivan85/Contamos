@@ -121,6 +121,27 @@ class PagoController extends BaseController
         return view('partner/pagos/recibo', $data);
     }
 
+    /** GET /finanzas/pagos-dia?fecha= - cobros del día desglosados en capital/interés/mora. */
+    public function pagosDia()
+    {
+        $tenantId = (int) session('tenant_id');
+        $fecha    = trim((string) $this->request->getGet('fecha'));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha) || $fecha > date('Y-m-d')) {
+            $fecha = date('Y-m-d');
+        }
+        $data = $this->svc->pagosDelDia($tenantId, $fecha);
+
+        return view('partner/reportes/pagos_dia', [
+            'title'     => 'Pagos del día - Contamos',
+            'rows'      => $data['rows'],
+            'totales'   => $data['totales'],
+            'fecha'     => $fecha,
+            'mon'       => $this->svc->moneda($tenantId),
+            'metodos'   => PagoModel::METODOS_LBL,
+            'lblEstado' => PagoModel::LABEL_ESTADO,
+        ]);
+    }
+
     /** GET /finanzas/recuperacion - créditos con cuotas vencidas por gestor. */
     public function recuperacion()
     {

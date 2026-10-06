@@ -54,6 +54,15 @@ class Reportes extends BaseConfig
             'cat'         => 'Finanzas',
             'kw'          => ['financiero', 'finanzas', 'cobros', 'cobro', 'ingresos', 'gastos', 'flujo', 'neto', 'pagos', 'ingreso', 'gasto'],
         ],
+        'finanzas.pagos-dia' => [
+            'nombre'      => 'Pagos del día',
+            'descripcion' => 'Cobros del día desglosados: cliente, crédito, capital, interés y mora.',
+            'icono'       => 'calendar',
+            'url'         => '/finanzas/pagos-dia',
+            'permiso'     => 'pagos.ver',
+            'cat'         => 'Finanzas',
+            'kw'          => ['pagos', 'dia', 'cobros', 'capital', 'interes', 'mora', 'desglose', 'diario'],
+        ],
         'finanzas.recuperacion' => [
             'nombre'      => 'Recuperación de cartera',
             'descripcion' => 'Cuotas vencidas pendientes por gestor para gestión de cobro.',

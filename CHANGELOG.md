@@ -4,6 +4,26 @@ Registro de cambios por sesión. Más reciente arriba.
 
 ---
 
+## 2026-10-05 (PM2) — Fix update-check de la app + reporte Pagos del día
+
+- **La app ya detecta versiones nuevas** — causa: `checkUpdate()` hacía
+  `fetch()` al archivo estático `/public/app/version.json`, que el server
+  sirve SIN `Access-Control-Allow-Origin` → el WebView de Capacitor lo
+  bloquea silenciosamente. Nuevo endpoint `GET /app-version`
+  (`LandingController::appVersion`) sirve el manifest por PHP con CORS +
+  `no-store`; `api.js` lo usa con cache-buster. `build.gradle` → 1.4.0 (6).
+  Al subir el APK nuevo hay que actualizar `public/app/version.json` a
+  `versionCode 6`.
+- **Reporte Pagos del día** (`/finanzas/pagos-dia`, permiso `pagos.ver`) —
+  cobros del día desglosados por Cliente, N° Crédito, Gestor, Método,
+  Capital, Interés, Mora y Total. APLICADO usa el desglose real de
+  `pago_aplicaciones` (proporción capital:interés de cada cuota); REVISION
+  muestra estimado `*` por la primera cuota pendiente. Selector de fecha,
+  fila de totales, card en /reportes (catálogo `finanzas.pagos-dia`),
+  ítem en menú Finanzas y enlace desde Recuperación.
+- **Recibos sin hora** — solo fecha en voucher imprimible, app y texto de
+  compartir (los pagos aplicados después mostraban hora engañosa).
+
 ## 2026-10-05 (PM) — TZ Nicaragua global + saldo en recibo + voucher en app
 
 - **`appTimezone = 'America/Managua'`** (`App.php`) — CI4 lo aplica a

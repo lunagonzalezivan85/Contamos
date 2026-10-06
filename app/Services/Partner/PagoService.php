@@ -1064,4 +1064,101 @@ class PagoService
             ->orderBy('pagos.fecha_hora', 'DESC')
             ->findAll();
     }
+
+    /**
+     * Pagos del día desglosados por capital / interés / mora.
+     * APLICADO: desglose real según pago_aplicaciones — cada aplicación
+     * 'CUOTA' se reparte en la proporción capital:interés de su cuota;
+     * 'MORA' va a columna aparte.
+     * REVISION (aún sin aplicar): desglose estimado por la proporción
+     * de la primera cuota pendiente del crédito (marcado `estimado`).
+     * @return array{rows: array, totales: array}
+     */
+    public function pagosDelDia(int $tenantId, string $fecha): array
+    {
+        $pagos = $this->pagos
+            ->select('pagos.*, personas.nombres, personas.apellidos, solicitudes.codigo_credito,
+                      gp.nombres AS gestor_n, gp.apellidos AS gestor_a')
+            ->join('solicitudes', 'solicitudes.id = pagos.solicitud_id')
+            ->join('clientes', 'clientes.id = solicitudes.cliente_id')
+            ->join('personas', 'personas.id = clientes.persona_id')
+            ->join('empleados emp', 'emp.id = pagos.empleado_id', 'left')
+            ->join('personas gp', 'gp.id = emp.persona_id', 'left')
+            ->where('pagos.tenant_id', $tenantId)
+            ->where('pagos.tipo', PagoModel::TIPO_PAGO)
+            ->where('pagos.monto >', 0)
+            ->whereIn('pagos.estado', [PagoModel::REVISION, PagoModel::APLICADO])
+            ->where('DATE(' . $this->db->prefixTable('pagos') . '.fecha_hora)', $fecha)
+            ->orderBy('pagos.fecha_hora', 'ASC')
+            ->findAll();
+
+        if (!$pagos) {
+            return ['rows' => [], 'totales' => ['n' => 0, 'capital' => 0, 'interes' => 0, 'mora' => 0, 'total' => 0]];
+        }
+
+        $appsPor = $this->aplicacionesPorPago($tenantId, array_column($pagos, 'id'));
+
+        $rows = [];
+        $tot  = ['n' => 0, 'capital' => 0, 'interes' => 0, 'mora' => 0, 'total' => 0];
+        foreach ($pagos as $p) {
+            $apps = $appsPor[(int) $p['id']] ?? [];
+            [$cap, $int, $mora, $estimado] = $this->splitPago($p, $apps);
+
+            $rows[] = $p + [
+                'capital'  => $cap, 'interes' => $int, 'mora' => $mora,
+                'estimado' => $estimado,
+            ];
+            $tot['n']++;
+            $tot['capital'] += $cap;  $tot['interes'] += $int;
+            $tot['mora']    += $mora; $tot['total']   += (float) $p['monto'];
+        }
+        foreach ($tot as $k => $v) $tot[$k] = is_int($v) ? $v : round($v, 2);
+        return ['rows' => $rows, 'totales' => $tot];
+    }
+
+    /** Aplicaciones de varios pagos, indexadas por pago_id (con datos de cuota). */
+    private function aplicacionesPorPago(int $tenantId, array $pagoIds): array
+    {
+        $apps = $this->db->table('pago_aplicaciones a')
+            ->select('a.pago_id, a.monto, a.tipo, c.cuota, c.capital, c.interes')
+            ->join('cuotas c', 'c.id = a.cuota_id')
+            ->where('a.tenant_id', $tenantId)
+            ->whereIn('a.pago_id', $pagoIds)
+            ->get()->getResultArray();
+        $por = [];
+        foreach ($apps as $a) $por[(int) $a['pago_id']][] = $a;
+        return $por;
+    }
+
+    /**
+     * Desglose de un pago → [capital, interés, mora, estimado].
+     * Sin aplicaciones (REVISION) estima con la primera cuota pendiente.
+     */
+    private function splitPago(array $pago, array $apps): array
+    {
+        $cap = $int = $mora = 0;
+        foreach ($apps as $a) {
+            $m = (float) $a['monto'];
+            if ($a['tipo'] === 'MORA') { $mora += $m; continue; }
+            $cuota = (float) $a['cuota'];
+            $parte = $cuota > 0 ? min($m, round($m * (float) $a['interes'] / $cuota, 2)) : 0;
+            $int += $parte;
+            $cap += $m - $parte;
+        }
+        if ($apps || $pago['estado'] !== PagoModel::REVISION) {
+            return [round($cap, 2), round($int, 2), round($mora, 2), false];
+        }
+
+        // Estimado: mismo ratio interés/cuota de la primera cuota pendiente
+        $pend = $this->cuotas
+            ->where('solicitud_id', (int) $pago['solicitud_id'])
+            ->where('estado !=', CuotaModel::ANULADA)
+            ->where('cuota > pagado + COALESCE(descuento, 0)', null, false)
+            ->orderBy('fecha_vence')->orderBy('n')
+            ->first();
+        $ratio = $pend && (float) $pend['cuota'] > 0
+            ? (float) $pend['interes'] / (float) $pend['cuota'] : 0;
+        $int = min((float) $pago['monto'], round((float) $pago['monto'] * $ratio, 2));
+        return [round((float) $pago['monto'] - $int, 2), $int, 0.0, true];
+    }
 }

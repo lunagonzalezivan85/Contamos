@@ -19,6 +19,7 @@
             <input type="date" name="fecha" value="<?= esc($hoy) ?>" title="Cobrar al"
                    style="padding:7px 10px; border:1.5px solid #E2E8F0; border-radius:8px;">
             <button type="submit" class="btn btn-outline btn-sm">Ver</button>
+            <a class="btn btn-outline btn-sm" href="<?= base_url('finanzas/pagos-dia') ?>">Pagos del día</a>
             <button type="button" class="btn btn-outline btn-sm" data-modal="modal-buscar"><?= icon('search', 14) ?> Buscar</button>
         </form>
     </div>

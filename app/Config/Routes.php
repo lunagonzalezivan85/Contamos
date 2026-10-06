@@ -10,6 +10,7 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('/', 'Shared\LandingController::index');
 $routes->get('descargar', 'Shared\LandingController::descargar');                // página de descarga de la app
 $routes->get('descargar/apk', 'Shared\LandingController::apk');                  // última versión del APK
+$routes->get('app-version', 'Shared\LandingController::appVersion');             // manifest con CORS (la app lo consulta)
 $routes->get('descargar/apk/(:segment)', 'Shared\LandingController::apk/$1');    // versión puntual
 $routes->post('solicitar-acceso', 'Shared\LandingController::solicitarAcceso');
 $routes->get('alta',  'Shared\LandingController::alta');                          // registro + calculadora de plan
@@ -259,6 +260,7 @@ $routes->post('credito/solicitudes', 'SolicitudController::guardar', ['filter' =
 
     // Finanzas — recuperación (cuotas vencidas) y reporte financiero
     $routes->get('finanzas/recuperacion', 'PagoController::recuperacion',   ['filter' => 'auth:pagos.ver']);
+    $routes->get('finanzas/pagos-dia',    'PagoController::pagosDia',       ['filter' => 'auth:pagos.ver']);
     $routes->get('finanzas/reporte',      'ReporteController::finanzas',    ['filter' => 'auth:reportes.ver']);
 
     // Herramientas — calculadora de cuotas y generador de documentación
