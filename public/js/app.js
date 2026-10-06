@@ -473,11 +473,11 @@
         });
     });
 
-    /* ---------- Pestañas (detalle de persona) ---------- */
-    var personaTabs = document.getElementById('persona-tabs');
-    if (personaTabs) {
-        var btns    = personaTabs.querySelectorAll('.tab-btn');
-        var panels  = document.querySelectorAll('.tab-panel');
+    /* ---------- Pestañas (.tabs .tab-btn[data-tab] + .tab-panel[data-panel]) ---------- */
+    document.querySelectorAll('.tabs').forEach(function (wrap) {
+        var btns   = wrap.querySelectorAll('.tab-btn');
+        var scope  = wrap.closest('.card') || wrap.parentElement;
+        var panels = scope.querySelectorAll('.tab-panel');
         btns.forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var tab = btn.dataset.tab;
@@ -485,7 +485,7 @@
                 panels.forEach(function (p) { p.classList.toggle('on', p.dataset.panel === tab); });
             });
         });
-    }
+    });
 
     /* ---------- Modales (data-modal abre, data-close cierra) — por delegación ---------- */
     function cerrarModales() {
