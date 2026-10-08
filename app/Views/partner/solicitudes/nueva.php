@@ -104,11 +104,11 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
                     </div>
                     <div class="form-group">
                         <label>Frecuencia de pago</label>
-                        <div class="seg" id="sol-freq">
-                            <?php foreach (['D','DI','S','Q','M'] as $i => $f): ?>
+                        <div class="seg seg-wiz" id="sol-freq">
+                            <?php foreach (['D' => 'Diario', 'DI' => 'Diario int.', 'S' => 'Semanal', 'Q' => 'Quincenal', 'M' => 'Mensual'] as $f => $lbl): ?>
                                 <input type="radio" name="frecuencia" id="f-<?= $f ?>" value="<?= $f ?>"
                                        <?= old('frecuencia', 'M') === $f ? 'checked' : '' ?>>
-                                <label for="f-<?= $f ?>"><?= esc($lblFreq[$f]) ?></label>
+                                <label for="f-<?= $f ?>" title="<?= esc($lblFreq[$f]) ?>"><?= esc($lbl) ?></label>
                             <?php endforeach; ?>
                         </div>
                     </div>
