@@ -30,8 +30,7 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
 
         <!-- ======== Paso 1: cliente ======== -->
         <div class="wiz-pane on" data-pane="cliente">
-            <div class="card card-pz">
-                <span class="card-pin">1</span>
+            <div class="card">
                 <h4 class="card-title"><?= icon('user', 16) ?> Cliente</h4>
                 <p class="card-subtitle">Quien solicita el crédito y a quién se asigna la ruta.</p>
                 <div class="form-grid mt-4">
@@ -78,8 +77,7 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
 
         <!-- ======== Paso 2: préstamo ======== -->
         <div class="wiz-pane" data-pane="prestamo">
-            <div class="card card-pz">
-                <span class="card-pin">2</span>
+            <div class="card">
                 <h4 class="card-title"><?= icon('percent', 16) ?> Préstamo</h4>
                 <p class="card-subtitle">La tasa es fija por empresa: <strong><?= number_format($tasa, 2) ?>% mensual</strong>.</p>
                 <div class="form-grid mt-4">
@@ -142,8 +140,7 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
 
         <!-- ======== Paso 3: resumen ======== -->
         <div class="wiz-pane" data-pane="listo">
-            <div class="card card-pz">
-                <span class="card-pin">3</span>
+            <div class="card">
                 <h4 class="card-title"><?= icon('file-text', 16) ?> Resumen</h4>
                 <div class="calc-result calc-mini" style="margin:14px 0 6px;">
                     <span class="calc-result-label" id="rs-cuota-lbl">Cuota estimada</span>
