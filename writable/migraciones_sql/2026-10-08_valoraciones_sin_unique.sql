@@ -1,0 +1,5 @@
+-- valoraciones: quitar UNIQUE(tenant_id,user_id) — el modal se muestra cada 5
+-- días y debe permitir varias valoraciones por usuario. Prod ya está bien
+-- (idx_val_usuario no único); este SQL es solo para installs que tengan el
+-- unique viejo. Nombre del índice puede variar: revisar SHOW KEYS primero.
+-- ALTER TABLE valoraciones DROP INDEX tenant_id_user_id, ADD KEY idx_val_usuario (tenant_id, user_id);

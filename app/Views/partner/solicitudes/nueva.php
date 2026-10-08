@@ -19,11 +19,19 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
       data-mon="<?= esc($m2) ?>" data-tasa="<?= esc(number_format($tasa, 2, '.', '')) ?>" novalidate>
     <?= csrf_field() ?>
 
+    <!-- Pasos (solo guía visual — se marcan solos al ir llenando) -->
+    <div class="wiz-progress" id="sol-wiz">
+        <div class="wiz-step on" data-step="cliente"><span class="wiz-num">1</span><span class="wiz-txt">Cliente</span></div>
+        <div class="wiz-step" data-step="prestamo"><span class="wiz-num">2</span><span class="wiz-txt">Préstamo</span></div>
+        <div class="wiz-step" data-step="listo"><span class="wiz-num">3</span><span class="wiz-txt">Revisar y registrar</span></div>
+    </div>
+
     <div class="sol-split sol-split-lg">
 
         <!-- ======== Izquierda: formulario ======== -->
         <div>
-            <div class="card">
+            <div class="card card-pz">
+                <span class="card-pin">1</span>
                 <h4 class="card-title"><?= icon('user', 16) ?> Cliente</h4>
                 <p class="card-subtitle">Quien solicita el crédito y a quién se asigna la ruta.</p>
                 <div class="form-grid mt-4">
@@ -67,7 +75,8 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
                 </div>
             </div>
 
-            <div class="card mt-4">
+            <div class="card card-pz mt-4">
+                <span class="card-pin">2</span>
                 <h4 class="card-title"><?= icon('percent', 16) ?> Préstamo</h4>
                 <p class="card-subtitle">La tasa es fija por empresa: <strong><?= number_format($tasa, 2) ?>% mensual</strong>.</p>
                 <div class="form-grid mt-4">
@@ -130,7 +139,8 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
 
         <!-- ======== Derecha: resumen en vivo ======== -->
         <div>
-            <div class="card" style="position:sticky; top:84px;">
+            <div class="card card-pz" style="position:sticky; top:84px;">
+                <span class="card-pin">3</span>
                 <h4 class="card-title"><?= icon('file-text', 16) ?> Resumen</h4>
                 <div class="calc-result calc-mini" style="margin:14px 0 6px;">
                     <span class="calc-result-label" id="rs-cuota-lbl">Cuota estimada</span>
@@ -205,6 +215,14 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
     function freq() { return (form.querySelector('input[name=frecuencia]:checked') || {}).value || 'M'; }
     function fmt(n) { return mon + ' ' + n.toLocaleString('es-NI', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 
+    // Pasos visuales: se marcan solos según lo que ya esté lleno
+    var wizSteps = document.querySelectorAll('#sol-wiz .wiz-step');
+    function wizSet(i, estado) {
+        if (!wizSteps[i]) return;
+        wizSteps[i].classList.toggle('on',   estado === 'on');
+        wizSteps[i].classList.toggle('done', estado === 'done');
+    }
+
     function limiteCli() {
         var opt = cli.selectedOptions[0];
         return opt && opt.value ? (parseFloat(opt.dataset.limite) || 10000) : null;
@@ -264,6 +282,13 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
         document.getElementById('rs-limite').textContent  = lim ? mon + ' ' + lim.toLocaleString('es-NI') : '—';
         document.getElementById('rs-cuota').textContent   = fmt(cuota) + (n > 0 && P > 0 ? ' × ' + n : '');
         document.getElementById('rs-cuota-lbl').textContent = lblCuota;
+
+        // Estado de los pasos del wizard
+        var okCli  = !!cli.value;
+        var okPres = P >= 1000 && mes > 0;
+        wizSet(0, okCli ? 'done' : 'on');
+        wizSet(1, okCli && okPres ? 'done' : (okCli ? 'on' : ''));
+        wizSet(2, okCli && okPres ? 'on' : '');
     }
 
     document.getElementById('btn-plan').addEventListener('click', function () {
