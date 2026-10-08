@@ -434,6 +434,49 @@ class PagoService
     }
 
     /**
+     * Reprograma SOLO las fechas del plan: la primera cuota pendiente toma
+     * $nuevaFecha y las demás pendientes/parciales se recalculan con la
+     * frecuencia del crédito. Montos, numeración e historial intactos.
+     * @return array{ok: bool, movidas?: int, desde?: string, error?: string}
+     */
+    public function reprogramar(int $tenantId, int $solId, string $nuevaFecha): array
+    {
+        $sol = $this->solicitudes->where('tenant_id', $tenantId)->find($solId);
+        if (!$sol || $sol['estado'] !== SolicitudModel::ACTIVO) {
+            return ['ok' => false, 'error' => 'Solo se puede reprogramar un crédito activo.'];
+        }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $nuevaFecha) || $nuevaFecha < date('Y-m-d')) {
+            return ['ok' => false, 'error' => 'La nueva fecha no puede ser en el pasado.'];
+        }
+
+        $pend = $this->cuotas->where('solicitud_id', $solId)
+            ->whereIn('estado', [CuotaModel::PENDIENTE, CuotaModel::PARCIAL])
+            ->orderBy('n', 'ASC')->findAll();
+        if (!$pend) {
+            return ['ok' => false, 'error' => 'No quedan cuotas pendientes por reprogramar.'];
+        }
+
+        $freq = (string) ($sol['frecuencia_aprobada'] ?? $sol['frecuencia'] ?? 'M');
+        $paso = SolicitudService::pasoDias($freq, (int) ($sol['dias_semana'] ?? 3), (int) ($sol['paso_dias'] ?? 0));
+
+        $db = Database::connect();
+        $db->transStart();
+
+        $f = new \DateTime($nuevaFecha);
+        foreach ($pend as $c) {
+            $this->cuotas->update((int) $c['id'], ['fecha_vence' => $f->format('Y-m-d')]);
+            SolicitudService::pasoFecha($f, $freq, $paso);
+        }
+        // el primer pago del crédito pasa a ser la nueva fecha
+        $this->solicitudes->update($solId, ['fecha_primer_pago' => $nuevaFecha]);
+
+        $db->transComplete();
+        return $db->transStatus()
+            ? ['ok' => true, 'movidas' => count($pend), 'desde' => $nuevaFecha]
+            : ['ok' => false, 'error' => 'No se pudo reprogramar el plan.'];
+    }
+
+    /**
      * Refinancia el crédito: crea una solicitud nueva (estado CREADA) del
      * mismo cliente que sigue el pipeline normal. Al entregarse el dinero,
      * `liquidarPorRefinanciamiento` salda el crédito anterior.

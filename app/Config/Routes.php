@@ -208,6 +208,7 @@ $routes->post('credito/solicitudes', 'SolicitudController::guardar', ['filter' =
     $routes->get('creditos/(:num)', 'CreditoController::ver/$1', ['filter' => 'auth:creditos.ver']);
     $routes->post('creditos/(:num)/abonar', 'CreditoController::abonar/$1', ['filter' => 'auth:pagos.registrar']);
     $routes->post('creditos/(:num)/reestructurar', 'CreditoController::reestructurar/$1', ['filter' => 'auth:solicitudes.aprobar']);
+    $routes->post('creditos/(:num)/reprogramar',   'CreditoController::reprogramar/$1',   ['filter' => 'auth:solicitudes.aprobar']);
     $routes->post('creditos/(:num)/refinanciar', 'CreditoController::refinanciar/$1', ['filter' => 'auth:solicitudes.aprobar']);
 
     // Bandeja de pagos — todo pago nace en REVISION hasta aprobarse

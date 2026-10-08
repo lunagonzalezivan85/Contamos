@@ -21,6 +21,7 @@ $gestor = trim(($s['gestor_nombres'] ?? '') . ' ' . ($s['gestor_apellidos'] ?? '
         <?php if (!empty($puede_refinanciar) && $saldo > 0): ?>
             <button type="button" class="btn btn-outline btn-sm" data-modal="modal-refinanciar"><?= icon('refresh-cw', 14) ?> Refinanciar</button>
             <button type="button" class="btn btn-outline btn-sm" data-modal="modal-reestructurar"><?= icon('sliders', 14) ?> Reestructurar</button>
+            <button type="button" class="btn btn-outline btn-sm" data-modal="modal-reprogramar"><?= icon('calendar', 14) ?> Reprogramar</button>
         <?php endif; ?>
         <a href="<?= base_url('creditos') ?>" class="btn btn-outline btn-sm"><?= icon('chevron-left', 14) ?> Volver</a>
     </div>
@@ -269,6 +270,36 @@ $gestor = trim(($s['gestor_nombres'] ?? '') . ' ' . ($s['gestor_apellidos'] ?? '
             <div class="modal-foot">
                 <button type="button" class="btn" data-close>Cancelar</button>
                 <button type="submit" class="btn btn-primary"><?= icon('sliders', 15) ?> Reestructurar plan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: reprogramar - mueve solo las fechas de las cuotas pendientes -->
+<div class="modal-overlay" id="modal-reprogramar" hidden>
+    <div class="modal-box">
+        <div class="modal-head">
+            <h4><?= icon('calendar', 17) ?> Reprogramar fechas de pago</h4>
+            <button type="button" class="modal-close" data-close><?= icon('x', 18) ?></button>
+        </div>
+        <form method="post" action="<?= base_url('creditos/' . $s['id'] . '/reprogramar') ?>"
+              onsubmit="return confirm('Se moverán las fechas de las cuotas pendientes según la nueva fecha de inicio. ¿Continuar?');">
+            <?= csrf_field() ?>
+            <div class="modal-body" style="display:block;">
+                <p class="form-hint" style="margin-bottom:12px;">
+                    La primera cuota pendiente pasa a la fecha elegida y las demás se
+                    recalculan con la frecuencia del crédito. <strong>No cambian montos
+                    ni el número de cuotas.</strong>
+                </p>
+                <div class="form-group">
+                    <label>Nueva fecha del próximo pago *</label>
+                    <input type="date" name="fecha_primer_pago" min="<?= date('Y-m-d') ?>" required
+                           value="<?= date('Y-m-d', strtotime('+7 days')) ?>">
+                </div>
+            </div>
+            <div class="modal-foot">
+                <button type="button" class="btn" data-close>Cancelar</button>
+                <button type="submit" class="btn btn-primary"><?= icon('calendar', 15) ?> Reprogramar</button>
             </div>
         </form>
     </div>

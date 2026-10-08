@@ -132,6 +132,23 @@ class CreditoController extends BaseController
                     . number_format($r['base'] ?? 0, 2) . '.' : $r['error']);
     }
 
+    /** POST /creditos/{id}/reprogramar - mueve solo las fechas del plan pendiente. */
+    public function reprogramar(int $id)
+    {
+        if (!$this->validate(['fecha_primer_pago' => 'required|valid_date'])) {
+            return redirect()->back()
+                ->with('error', 'Revise la fecha del primer pago.');
+        }
+
+        $r = $this->svc->reprogramar(
+            (int) session('tenant_id'), $id, (string) $this->request->getPost('fecha_primer_pago'));
+
+        return redirect()->to('/creditos/' . $id)
+            ->with($r['ok'] ? 'success' : 'error',
+                $r['ok'] ? 'Plan reprogramado - ' . $r['movidas'] . ' cuotas desde el '
+                    . date('d/m/Y', strtotime($r['desde'])) . '.' : $r['error']);
+    }
+
     /** POST /creditos/{id}/refinanciar - crea la solicitud de refinanciamiento. */
     public function refinanciar(int $id)
     {

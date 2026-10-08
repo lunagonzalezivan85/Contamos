@@ -324,31 +324,10 @@ class SolicitudService
         };
         $iP = ($tasa / 100) / max($pagosXmes, 0.01);
         $n  = max(1, (int) round($plazo * $pagosXmes));
-        $pasoDias = match ($freq) {
-            'D'  => 1, 'S' => 7,
-            'DI' => max(1, (int) round(7 / $dias)),
-            'P'  => max(1, $pasoPersonal),
-            default => 30,
-        };
+        $pasoDias = self::pasoDias($freq, $dias, $pasoPersonal);
 
         // Siguiente fecha de cuota según la frecuencia
-        $pasoFecha = function (\DateTime $f) use ($freq, $pasoDias): void {
-            if ($freq === 'Q') {
-                $dia    = (int) $f->format('j');
-                $ultimo = (int) $f->format('t');
-                if ($dia < 15) {
-                    $f->setDate((int) $f->format('Y'), (int) $f->format('n'), 15);
-                } elseif ($dia < $ultimo) {
-                    $f->setDate((int) $f->format('Y'), (int) $f->format('n'), $ultimo);
-                } else {
-                    $f->modify('first day of next month')->setDate((int) $f->format('Y'), (int) $f->format('n'), 15);
-                }
-                return;
-            }
-            do {
-                $f->modify('+' . $pasoDias . ' days');
-            } while ($freq === 'DI' && (int) $f->format('N') === 7);   // sin domingo
-        };
+        $pasoFecha = fn (\DateTime $f) => self::pasoFecha($f, $freq, $pasoDias);
 
         // Cuota del FRANCES para amortización (también base del anticipado)
         $cuotaFrances = $iP > 0 ? $monto * $iP * (1 + $iP) ** $n / ((1 + $iP) ** $n - 1) : $monto / $n;
@@ -427,6 +406,41 @@ class SolicitudService
             'aprobado'     => !empty($sol['monto_aprobado']),
             'rows'         => $rows,
         ];
+    }
+
+    /**
+     * Avanza $f a la siguiente fecha de cuota según la frecuencia.
+     * Q = quincena real (15 y fin de mes) · DI salta domingos · el resto
+     * suma $pasoDias. Compartida por planPagos y la reprogramación de fechas.
+     */
+    public static function pasoFecha(\DateTime $f, string $freq, int $pasoDias): void
+    {
+        if ($freq === 'Q') {
+            $dia    = (int) $f->format('j');
+            $ultimo = (int) $f->format('t');
+            if ($dia < 15) {
+                $f->setDate((int) $f->format('Y'), (int) $f->format('n'), 15);
+            } elseif ($dia < $ultimo) {
+                $f->setDate((int) $f->format('Y'), (int) $f->format('n'), $ultimo);
+            } else {
+                $f->modify('first day of next month')->setDate((int) $f->format('Y'), (int) $f->format('n'), 15);
+            }
+            return;
+        }
+        do {
+            $f->modify('+' . $pasoDias . ' days');
+        } while ($freq === 'DI' && (int) $f->format('N') === 7);   // sin domingo
+    }
+
+    /** Paso en días entre cuotas según la frecuencia (DI/P dependen del crédito). */
+    public static function pasoDias(string $freq, int $diasSemana, int $pasoPersonal): int
+    {
+        return match ($freq) {
+            'D'  => 1, 'S' => 7,
+            'DI' => max(1, (int) round(7 / max(1, $diasSemana))),
+            'P'  => max(1, $pasoPersonal),
+            default => 30,
+        };
     }
 
     /** Fecha sugerida del primer pago según la frecuencia. */
