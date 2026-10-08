@@ -26,10 +26,10 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
         <div class="wiz-step" data-step="listo"><span class="wiz-num">3</span><span class="wiz-txt">Revisar y registrar</span></div>
     </div>
 
-    <div class="sol-split sol-split-lg">
+    <div class="wiz-wrap">
 
-        <!-- ======== Izquierda: formulario ======== -->
-        <div>
+        <!-- ======== Paso 1: cliente ======== -->
+        <div class="wiz-pane on" data-pane="cliente">
             <div class="card card-pz">
                 <span class="card-pin">1</span>
                 <h4 class="card-title"><?= icon('user', 16) ?> Cliente</h4>
@@ -74,8 +74,11 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="card card-pz mt-4">
+        <!-- ======== Paso 2: préstamo ======== -->
+        <div class="wiz-pane" data-pane="prestamo">
+            <div class="card card-pz">
                 <span class="card-pin">2</span>
                 <h4 class="card-title"><?= icon('percent', 16) ?> Préstamo</h4>
                 <p class="card-subtitle">La tasa es fija por empresa: <strong><?= number_format($tasa, 2) ?>% mensual</strong>.</p>
@@ -137,9 +140,9 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
             </div>
         </div>
 
-        <!-- ======== Derecha: resumen en vivo ======== -->
-        <div>
-            <div class="card card-pz" style="position:sticky; top:84px;">
+        <!-- ======== Paso 3: resumen ======== -->
+        <div class="wiz-pane" data-pane="listo">
+            <div class="card card-pz">
                 <span class="card-pin">3</span>
                 <h4 class="card-title"><?= icon('file-text', 16) ?> Resumen</h4>
                 <div class="calc-result calc-mini" style="margin:14px 0 6px;">
@@ -170,6 +173,16 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
                 </p>
             </div>
         </div>
+    </div>
+
+    <!-- Navegación del wizard -->
+    <div class="wiz-nav">
+        <button type="button" class="btn btn-outline" id="wiz-prev" disabled>
+            <?= icon('chevron-left', 15) ?> Anterior
+        </button>
+        <button type="button" class="btn btn-primary" id="wiz-next" style="justify-content:center;">
+            Siguiente <?= icon('chevron-right', 15) ?>
+        </button>
     </div>
 </form>
 
@@ -215,13 +228,49 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
     function freq() { return (form.querySelector('input[name=frecuencia]:checked') || {}).value || 'M'; }
     function fmt(n) { return mon + ' ' + n.toLocaleString('es-NI', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 
-    // Pasos visuales: se marcan solos según lo que ya esté lleno
+    // Wizard: un paso visible a la vez, con Anterior/Siguiente
     var wizSteps = document.querySelectorAll('#sol-wiz .wiz-step');
-    function wizSet(i, estado) {
-        if (!wizSteps[i]) return;
-        wizSteps[i].classList.toggle('on',   estado === 'on');
-        wizSteps[i].classList.toggle('done', estado === 'done');
+    var panes    = document.querySelectorAll('#sol-form .wiz-pane');
+    var btnPrev  = document.getElementById('wiz-prev');
+    var btnNext  = document.getElementById('wiz-next');
+    var cur      = 0;
+
+    function pasoOk(i) {
+        if (i === 0) return !!cli.value;
+        if (i === 1) return !!cli.value && (parseFloat(monto.value) || 0) >= 1000
+                         && (parseFloat(plazo.value) || 0) > 0;
+        return true;
     }
+    function wizSync() {
+        wizSteps.forEach(function (s, i) {
+            s.classList.toggle('on',   i === cur);
+            s.classList.toggle('done', i !== cur && pasoOk(i));
+        });
+        panes.forEach(function (p, i) { p.classList.toggle('on', i === cur); });
+        btnPrev.disabled = cur === 0;
+        btnNext.style.display = cur === panes.length - 1 ? 'none' : '';
+    }
+    function wizGo(i) { if (i < 0 || i >= panes.length) return; cur = i; wizSync(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+
+    btnNext.addEventListener('click', function () {
+        if (cur === 0 && !cli.value) {
+            alert('Seleccione un cliente.'); (cli._busqInput || cli).focus(); return;
+        }
+        if (cur === 1) {
+            if ((parseFloat(monto.value) || 0) < 1000) {
+                alert('El monto mínimo a prestar es ' + mon + ' 1,000.'); monto.focus(); return;
+            }
+            if ((parseFloat(plazo.value) || 0) <= 0) {
+                alert('Indique el plazo en meses.'); plazo.focus(); return;
+            }
+        }
+        wizGo(cur + 1);
+    });
+    btnPrev.addEventListener('click', function () { wizGo(cur - 1); });
+    wizSteps.forEach(function (s, i) {
+        s.style.cursor = 'pointer';
+        s.addEventListener('click', function () { if (i < cur) wizGo(i); });
+    });
 
     function limiteCli() {
         var opt = cli.selectedOptions[0];
@@ -283,12 +332,7 @@ $pMax = (int) ($tenant['plazo_meses_max'] ?? 60);
         document.getElementById('rs-cuota').textContent   = fmt(cuota) + (n > 0 && P > 0 ? ' × ' + n : '');
         document.getElementById('rs-cuota-lbl').textContent = lblCuota;
 
-        // Estado de los pasos del wizard
-        var okCli  = !!cli.value;
-        var okPres = P >= 1000 && mes > 0;
-        wizSet(0, okCli ? 'done' : 'on');
-        wizSet(1, okCli && okPres ? 'done' : (okCli ? 'on' : ''));
-        wizSet(2, okCli && okPres ? 'on' : '');
+        wizSync();
     }
 
     document.getElementById('btn-plan').addEventListener('click', function () {
