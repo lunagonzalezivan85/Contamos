@@ -4,6 +4,27 @@ Registro de cambios por sesión. Más reciente arriba.
 
 ---
 
+## 2026-10-08 — Reprogramar fechas + diseño puzzle en solicitud nueva + fixes
+
+- **Reprogramar plan de pagos** (`POST /creditos/{id}/reprogramar`) — mueve SOLO
+  las `fecha_vence` de cuotas PENDIENTE/PARCIAL: la primera toma la nueva fecha
+  y el resto se recalcula con la frecuencia del crédito. Montos, numeración e
+  historial intactos. Modal con un solo campo en `creditos/ver`, permiso
+  `solicitudes.aprobar`. La lógica de paso entre fechas se extrajo de
+  `planPagos` a `SolicitudService::pasoFecha()`/`pasoDias()` (reusable).
+- **Diseño puzzle en `/credito/solicitudes/nueva`** — stepper encajado
+  Cliente→Préstamo→Revisar con `.wiz-step` (estados `on`/`done` en vivo según
+  se llena), cards con `.card-pz` (notch + `.card-pin` numerado), y el resumen
+  recupera su hero verde: `calc-result`/`sol-resumen`/`sol-row` solo existían
+  en `portal.css` y se portaron a `app.css`.
+- **Fix local**: `persona_negocios` corrompida en InnoDB (error 1932) —
+  recreada con esquema de prod + 3 filas restauradas.
+- **Fix local**: `valoraciones` tenía UNIQUE(tenant_id,user_id) — la encuesta
+  de 5 días fallaba al 2º intento; índice cambiado a no-único (prod ya estaba
+  bien). SQL en `writable/migraciones_sql/`.
+
+---
+
 ## 2026-10-06 — Diseño puzzle en portal gestor + ruta con fecha + APK 1.4.0
 
 - **Diseño "puzzle" (notch) en el portal del gestor** — sistema `.pz-notch`
