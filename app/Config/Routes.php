@@ -119,6 +119,10 @@ $routes->group('admin', ['filter' => 'admin', 'namespace' => 'App\Controllers\Ad
     $routes->post('usuarios/(:num)/clave',   'UsuarioController::resetClave/$1');
     $routes->post('usuarios/(:num)/reset-rapido', 'UsuarioController::resetRapido/$1');
 
+    // Base de datos — listado de tablas + descarga de estructura/backup
+    $routes->get ('base-datos',           'BaseDatosController::index');
+    $routes->post('base-datos/exportar',  'BaseDatosController::exportar');
+
     // Leads — solicitudes de alta de la landing (acceso_solicitudes)
     $routes->get('leads',                        'LeadsController::index');
     $routes->post('leads/(:num)/contactar',      'LeadsController::contactar/$1');

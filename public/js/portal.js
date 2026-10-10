@@ -116,64 +116,64 @@
             return;
         }
 
-        // Compartir → canvas PNG → Web Share (móvil) o descarga
+        // Compartir → PNG formato ticket 58mm (térmica PT-210) → Web Share
         if (e.target.closest('#rec-compartir')) {
-            var r = m._recibo;
-            var cv = document.createElement('canvas');
-            cv.width = 760;
-            var cx = cv.getContext('2d');
-            var W = cv.width, pad = 44;
-            var filas = [
-                ['Cliente', r.cliente], ['Crédito', r.credito],
-                ['Fecha', r.fecha], ['Método', r.metodo], ['Estado', r.estado],
-            ];
+            var r   = m._recibo;
+            var W   = 384, pad = 18;
+            var emp = (m.querySelector('#rec-emp') || {}).textContent || 'Contamos';
+            var SEP = '-'.repeat(46);
+            var FH  = '700 18px "Courier New",monospace',
+                FS  = '12px "Courier New",monospace',
+                FB  = '700 13px "Courier New",monospace',
+                FX  = '700 30px "Courier New",monospace';
 
-            // Alto estimado + wrap de nota
-            var nota = r.revision
-                ? 'PAGO EN REVISION — este comprobante no confirma el abono. Se aplica al plan de cuotas cuando oficina lo valide en cuentas bancarias o caja.'
-                : null;
-            cv.height = 430 + (nota ? 130 : 0);
-
-            cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, W, cv.height);
-            var y = 52;
-            cx.textAlign = 'center'; cx.fillStyle = '#172B4D';
-            cx.font = '700 30px Segoe UI, Arial';
-            cx.fillText((m.querySelector('#rec-emp') || {}).textContent || '', W / 2, y);
-            y += 26; cx.fillStyle = '#64748B'; cx.font = '600 15px Segoe UI, Arial';
-            cx.fillText('RECIBO DE PAGO', W / 2, y);
-            y += 34; cx.fillStyle = '#0E8A6A'; cx.font = '800 26px Segoe UI, Arial';
-            cx.fillText(r.num || '', W / 2, y);
-            y += 20;
-            cx.strokeStyle = '#CBD5E1'; cx.setLineDash([8, 6]);
-            cx.beginPath(); cx.moveTo(pad, y); cx.lineTo(W - pad, y); cx.stroke();
-            cx.setLineDash([]); cx.textAlign = 'left';
-            y += 26;
-            filas.forEach(function (f) {
-                cx.fillStyle = '#64748B'; cx.font = '600 14px Segoe UI, Arial';
-                cx.fillText(f[0].toUpperCase(), pad, y);
-                cx.fillStyle = '#172B4D'; cx.font = '600 17px Segoe UI, Arial';
-                cx.textAlign = 'right'; cx.fillText(String(f[1] || ''), W - pad, y);
-                cx.textAlign = 'left';
-                y += 30;
-            });
-            y += 12;
-            cx.fillStyle = '#E6F9F1'; cx.fillRect(0, y, W, 78);
-            cx.fillStyle = '#172B4D'; cx.font = '800 40px Segoe UI, Arial'; cx.textAlign = 'center';
-            cx.fillText('C$ ' + (r.monto || ''), W / 2, y + 52);
-            y += 78;
-            if (nota) {
-                cx.fillStyle = '#FFF4E5'; cx.fillRect(0, y, W, 110);
-                cx.fillStyle = '#B45309'; cx.font = '600 13px Segoe UI, Arial';
-                var palabras = nota.split(' '), linea = '', ly = y + 24;
-                palabras.forEach(function (p) {
-                    var t = linea + p + ' ';
-                    if (cx.measureText(t).width > W - 2 * pad) {
-                        cx.fillText(linea.trim(), W / 2, ly); linea = p + ' '; ly += 20;
-                    } else { linea = t; }
+            var items = [];
+            function add(t, f, a, lh, g) { items.push({ t: t, f: f, a: a, lh: lh, g: g || 0 }); }
+            function wrap(t, f, a, lh, g, max) {
+                var ln = '';
+                String(t).split(' ').forEach(function (w) {
+                    var x = ln ? ln + ' ' + w : w;
+                    if (x.length > max) { add(ln, f, a, lh, 0); ln = w; } else { ln = x; }
                 });
-                cx.fillText(linea.trim(), W / 2, ly);
+                if (ln) add(ln, f, a, lh, g);
             }
-            cx.textAlign = 'left';
+
+            wrap(emp.toUpperCase(), FH, 'center', 22, 2, 22);
+            add('RECIBO DE PAGO', FS, 'center', 18, 2);
+            add(r.num || '', FB, 'center', 20, 4);
+            add(SEP, FS, 'center', 12, 2);
+            [['Cliente', r.cliente], ['Credito', r.credito], ['Fecha', r.fecha],
+             ['Metodo', r.metodo],  ['Estado', r.estado]]
+                .forEach(function (f) { wrap(f[0] + ': ' + (f[1] || '-'), FS, 'left', 17, 0, 42); });
+            add(SEP, FS, 'center', 12, 6);
+            add('MONTO PAGADO', FS, 'center', 16, 2);
+            add('C$ ' + (r.monto || ''), FX, 'center', 36, 6);
+            add(SEP, FS, 'center', 12, 2);
+            if (r.revision) {
+                wrap('** PAGO EN REVISION **', FB, 'center', 18, 0, 42);
+                wrap('Este comprobante no confirma el abono; se aplica cuando oficina lo valide.',
+                     FS, 'center', 15, 4, 42);
+                add(SEP, FS, 'center', 12, 2);
+            }
+            add('Gracias por su pago', FS, 'center', 18, 0);
+            add('contamos.softlutionic.com', FS, 'center', 16, 0);
+
+            var H = 28;
+            items.forEach(function (i) { H += i.lh + i.g; });
+            var cv = document.createElement('canvas');
+            cv.width = W * 2; cv.height = H * 2;          // 2x → nítido a 203dpi
+            var cx = cv.getContext('2d');
+            cx.scale(2, 2);
+            cx.fillStyle = '#fff'; cx.fillRect(0, 0, W, H);
+            cx.fillStyle = '#000';
+            var y = 14;
+            items.forEach(function (i) {
+                y += i.lh;
+                cx.font = i.f;
+                cx.textAlign = i.a;
+                cx.fillText(i.t, i.a === 'center' ? W / 2 : pad, y);
+                y += i.g;
+            });
 
             cv.toBlob(function (blob) {
                 if (!blob) return;
