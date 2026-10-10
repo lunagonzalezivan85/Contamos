@@ -175,9 +175,8 @@
         var H = 28;
         items.forEach(function (i) { H += i.lh + i.g; });
         var cv = document.createElement('canvas');
-        cv.width = W * 2; cv.height = H * 2;          // 2x → nítido a 203dpi
+        cv.width = W; cv.height = H;                  // 384px = 1:1 con los puntos de la PT-210
         var cx = cv.getContext('2d');
-        cx.scale(2, 2);
         cx.fillStyle = '#fff'; cx.fillRect(0, 0, W, H);
         cx.fillStyle = '#000';
         var y = 12;
@@ -187,9 +186,17 @@
             cx.textAlign = i.a;
             var x = i.a === 'center' ? W / 2 : pad;
             cx.fillText(i.t, x, y);
-            cx.fillText(i.t, x + 0.6, y);          // doble pasada → más tinta
+            cx.fillText(i.t, x + 0.5, y);          // doble pasada → más tinta
             y += i.g;
         });
+
+        // Umbral a B/N puro: la térmica difumina los grises del antialias
+        var img = cx.getImageData(0, 0, W, H), d = img.data;
+        for (var px = 0; px < d.length; px += 4) {
+            var v = d[px] < 190 ? 0 : 255;
+            d[px] = d[px + 1] = d[px + 2] = v;
+        }
+        cx.putImageData(img, 0, 0);
 
         cv.toBlob(function (blob) {
             if (!blob) return;
