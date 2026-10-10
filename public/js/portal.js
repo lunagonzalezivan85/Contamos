@@ -119,81 +119,91 @@
         // Compartir → PNG formato ticket 58mm (térmica PT-210) → Web Share
         if (e.target.closest('#rec-compartir')) {
             var r   = m._recibo;
-            var W   = 384, pad = 18;
             var emp = (m.querySelector('#rec-emp') || {}).textContent || 'Contamos';
-            var SEP = '-'.repeat(38);
-            var FH  = '700 20px "Courier New",monospace',
-                FS  = '700 14px "Courier New",monospace',   // todo bold — la térmica lava el texto fino
-                FB  = '700 15px "Courier New",monospace',
-                FX  = '700 34px "Courier New",monospace';
-
-            var items = [];
-            function add(t, f, a, lh, g) { items.push({ t: t, f: f, a: a, lh: lh, g: g || 0 }); }
-            function wrap(t, f, a, lh, g, max) {
-                var ln = '';
-                String(t).split(' ').forEach(function (w) {
-                    var x = ln ? ln + ' ' + w : w;
-                    if (x.length > max) { add(ln, f, a, lh, 0); ln = w; } else { ln = x; }
-                });
-                if (ln) add(ln, f, a, lh, g);
-            }
-
-            wrap(emp.toUpperCase(), FH, 'center', 24, 2, 20);
-            add('RECIBO DE PAGO', FS, 'center', 20, 2);
-            add(r.num || '', FB, 'center', 22, 4);
-            add(SEP, FS, 'center', 14, 2);
-            [['Cliente', r.cliente], ['Credito', r.credito], ['Fecha', r.fecha],
-             ['Metodo', r.metodo],  ['Estado', r.estado]]
-                .forEach(function (f) { wrap(f[0] + ': ' + (f[1] || '-'), FS, 'left', 20, 0, 34); });
-            add(SEP, FS, 'center', 14, 6);
-            add('MONTO PAGADO', FS, 'center', 18, 2);
-            add('C$ ' + (r.monto || ''), FX, 'center', 40, 6);
-            add(SEP, FS, 'center', 14, 2);
-            if (r.revision) {
-                wrap('** PAGO EN REVISION **', FB, 'center', 20, 0, 34);
-                wrap('Este comprobante no confirma el abono; se aplica cuando oficina lo valide.',
-                     FS, 'center', 17, 4, 34);
-                add(SEP, FS, 'center', 14, 2);
-            }
-            add('Gracias por su pago', FS, 'center', 20, 0);
-            add('contamos.softlutionic.com', FS, 'center', 18, 0);
-
-            var H = 28;
-            items.forEach(function (i) { H += i.lh + i.g; });
-            var cv = document.createElement('canvas');
-            cv.width = W * 2; cv.height = H * 2;          // 2x → nítido a 203dpi
-            var cx = cv.getContext('2d');
-            cx.scale(2, 2);
-            cx.fillStyle = '#fff'; cx.fillRect(0, 0, W, H);
-            cx.fillStyle = '#000';
-            var y = 14;
-            items.forEach(function (i) {
-                y += i.lh;
-                cx.font = i.f;
-                cx.textAlign = i.a;
-                var x = i.a === 'center' ? W / 2 : pad;
-                // doble pasada → más densidad de tinta en térmicas
-                cx.fillText(i.t, x, y);
-                cx.fillText(i.t, x + 0.6, y);
-                y += i.g;
-            });
-
-            cv.toBlob(function (blob) {
-                if (!blob) return;
-                var file = new File([blob], (r.num || 'recibo') + '.png', { type: 'image/png' });
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    navigator.share({ files: [file], title: 'Recibo ' + (r.num || '') }).catch(function () {});
-                } else {
-                    var a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = file.name;
-                    a.click();
-                    URL.revokeObjectURL(a.href);
-                }
-            }, 'image/png');
+            // VT323 ≈ fuente nativa PC437 de la térmica; si no carga, Courier
+            var base = location.pathname.replace(/\/portal.*$/, '').replace(/\/[^/]*$/, '');
+            var ff = new FontFace('VT323', "url('" + location.origin + base + "/public/fonts/vt323.woff2" + "')");
+            ff.load().then(function (f) { document.fonts.add(f); dibujarTicket(r, emp, 'VT323'); })
+                     .catch(function () { dibujarTicket(r, emp, '"Courier New"'); });
             return;
         }
     });
+
+    /* Ticket térmico 58mm (384px útiles ×2 = 768 físicos, 203dpi).
+       fam = familia de fuente (VT323 o fallback monospace). */
+    function dibujarTicket(r, emp, fam) {
+        var W = 384, pad = 14;
+        var mono = fam + ', "Courier New", monospace';
+        var SEP  = '-'.repeat(40);
+        var FH   = '700 26px ' + mono,          // empresa
+            FS   = '700 20px ' + mono,          // texto normal
+            FB   = '700 22px ' + mono,          // semi-título
+            FX   = '700 44px ' + mono;          // monto
+
+        var items = [];
+        function add(t, f, a, lh, g) { items.push({ t: t, f: f, a: a, lh: lh, g: g || 0 }); }
+        function wrap(t, f, a, lh, g, max) {
+            var ln = '';
+            String(t).split(' ').forEach(function (w) {
+                var x = ln ? ln + ' ' + w : w;
+                if (x.length > max) { add(ln, f, a, lh, 0); ln = w; } else { ln = x; }
+            });
+            if (ln) add(ln, f, a, lh, g);
+        }
+
+        wrap(String(emp).toUpperCase(), FH, 'center', 28, 2, 20);
+        add('RECIBO DE PAGO', FS, 'center', 22, 2);
+        add(r.num || '', FB, 'center', 26, 4);
+        add(SEP, FS, 'center', 14, 2);
+        [['Cliente', r.cliente], ['Credito', r.credito], ['Fecha', r.fecha],
+         ['Metodo', r.metodo],  ['Estado', r.estado]]
+            .forEach(function (f) { wrap(f[0] + ': ' + (f[1] || '-'), FS, 'left', 22, 0, 40); });
+        add(SEP, FS, 'center', 14, 8);
+        add('MONTO PAGADO', FS, 'center', 20, 4);
+        add('C$ ' + (r.monto || ''), FX, 'center', 46, 8);
+        add(SEP, FS, 'center', 14, 2);
+        if (r.revision) {
+            wrap('** PAGO EN REVISION **', FB, 'center', 24, 0, 34);
+            wrap('Este comprobante no confirma el abono; se aplica cuando oficina lo valide.',
+                 FS, 'center', 19, 4, 34);
+            add(SEP, FS, 'center', 14, 2);
+        }
+        add('Gracias por su pago', FS, 'center', 22, 0);
+        add('contamos.softlutionic.com', FS, 'center', 20, 0);
+
+        var H = 28;
+        items.forEach(function (i) { H += i.lh + i.g; });
+        var cv = document.createElement('canvas');
+        cv.width = W * 2; cv.height = H * 2;          // 2x → nítido a 203dpi
+        var cx = cv.getContext('2d');
+        cx.scale(2, 2);
+        cx.fillStyle = '#fff'; cx.fillRect(0, 0, W, H);
+        cx.fillStyle = '#000';
+        var y = 12;
+        items.forEach(function (i) {
+            y += i.lh;
+            cx.font = i.f;
+            cx.textAlign = i.a;
+            var x = i.a === 'center' ? W / 2 : pad;
+            cx.fillText(i.t, x, y);
+            cx.fillText(i.t, x + 0.6, y);          // doble pasada → más tinta
+            y += i.g;
+        });
+
+        cv.toBlob(function (blob) {
+            if (!blob) return;
+            var file = new File([blob], (r.num || 'recibo') + '.png', { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                navigator.share({ files: [file], title: 'Recibo ' + (r.num || '') }).catch(function () {});
+            } else {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = file.name;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            }
+        }, 'image/png');
+    }
 
     // El action depende del crédito elegido: /portal/cobros/{id}/abonar
     // + anti doble-submit: una vez enviado el form queda bloqueado (evita
