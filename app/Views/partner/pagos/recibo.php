@@ -139,6 +139,20 @@ $nota = [
                         'saldo'   => isset($saldo) && $saldo !== null ? number_format((float) $saldo, 2) : '',
                         'revision' => $est === 'REVISION',
                     ]), 'attr') ?>">PDF 58mm</button>
+            <button type="button" data-tkt="rawbt" title="Impresora térmica (requiere app RawBT)"
+                    data-emp="<?= esc($tenant['nombre'] ?? 'Contamos') ?>"
+                    data-recibo="<?= esc(json_encode([
+                        'num'     => $reciboNum,
+                        'cliente' => $cliente,
+                        'credito' => $p['codigo_credito'] ?? '#' . $p['solicitud_id'],
+                        'monto'   => number_format((float) $p['monto'], 2),
+                        'fecha'   => date('d/m/Y', strtotime($p['fecha_hora'])),
+                        'metodo'  => $metodos[$p['metodo']] ?? $p['metodo'],
+                        'estado'  => $lblEstado[$est] ?? $est,
+                        'gestor'  => $cobro,
+                        'saldo'   => isset($saldo) && $saldo !== null ? number_format((float) $saldo, 2) : '',
+                        'revision' => $est === 'REVISION',
+                    ]), 'attr') ?>">Térmica</button>
             <button type="button" class="pri" data-tkt="png"
                     data-emp="<?= esc($tenant['nombre'] ?? 'Contamos') ?>"
                     data-recibo="<?= esc(json_encode([

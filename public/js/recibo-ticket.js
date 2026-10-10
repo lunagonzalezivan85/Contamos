@@ -163,6 +163,76 @@ var TicketRecibo = (function () {
             (r.num || 'recibo') + '.pdf', { type: 'application/pdf' }), r);
     }
 
+    /* ---- ESC/POS texto puro (sin píxeles) → RawBT app (rawbt:base64) ----
+       La PT-210 imprime con su fuente nativa PC437 — igual que su self-test.
+       Requiere app "RawBT" instalada en el teléfono. */
+    function escposBytes(r, emp) {
+        var B = [];
+        var add   = function (s) { for (var i = 0; i < s.length; i++) B.push(s.charCodeAt(i) & 0x7F); };
+        var cmd   = function () { for (var i = 0; i < arguments.length; i++) B.push(arguments[i]); };
+        var LF    = 0x0A;
+        var size  = function (n) { cmd(0x1D, 0x21, n); };        // GS ! n
+        var just  = function (n) { cmd(0x1B, 0x61, n); };        // ESC a n
+        var sep   = function (c) { add(c.repeat(32) + '\n'); };
+        var put   = function (t, max, addT) {
+            var ln = '';
+            String(t).split(' ').forEach(function (w) {
+                var x = ln ? ln + ' ' + w : w;
+                if (x.length > max) { addT(ln + '\n'); ln = w; } else { ln = x; }
+            });
+            if (ln) addT(ln + '\n');
+        };
+        // PC437: acentos/diéresis/ñ/¿/¡ del texto
+        var pc437 = { 'á':0xA0,'é':0x82,'í':0xA1,'ó':0xA2,'ú':0xA3,'Á':0xB5,'É':0x90,
+                      'Í':0xD6,'Ó':0xE0,'Ú':0xE9,'ñ':0xA4,'Ñ':0xA5,'ü':0x81,'Ü':0x9A,
+                      '¿':0xA8,'¡':0xAD,'ç':0x87,'Ç':0x80 };
+        var addTxt = function (s) {
+            String(s).normalize('NFC').split('').forEach(function (ch) {
+                B.push(pc437[ch] !== undefined ? pc437[ch] : (ch.charCodeAt(0) < 128 ? ch.charCodeAt(0) : 0x3F));
+            });
+        };
+
+        cmd(0x1B, 0x40);                                  // init
+        just(1); size(0x11);                              // centro, 2x2
+        addTxt(emp.toUpperCase()); add('\n');
+        size(0x00);
+        sep('=');
+        add('RECIBO DE PAGO\n');
+        size(0x10);                                       // 2x ancho
+        addTxt(r.num || ''); add('\n');
+        size(0x00);
+        sep('-');
+        just(0);                                          // izquierda
+        [['Cliente', r.cliente], ['Credito', r.credito], ['Fecha', r.fecha],
+         ['Metodo', r.metodo],  ['Estado', r.estado],  ['Gestor', r.gestor]]
+            .forEach(function (f) { put(f[0] + ': ' + (f[1] || '-'), 32, addTxt); });
+        if (r.saldo) put('Saldo pend.: C$ ' + r.saldo, 32, addTxt);
+        sep('-');
+        just(1);                                          // centro
+        add('MONTO PAGADO\n');
+        size(0x22);                                       // 3x3
+        addTxt('C$ ' + (r.monto || '')); add('\n');
+        size(0x00);
+        sep('=');
+        if (r.revision) {
+            put('** PAGO EN REVISION **', 32, addTxt);
+            put('Se aplica al plan cuando oficina valide la transferencia.', 32, addTxt);
+            sep('-');
+        }
+        add('Gracias por su pago\n');
+        add('contamos.softlutionic.com\n');
+        add('\n\n');
+        cmd(0x1D, 0x56, 0x41, 0x00);                      // corte
+        return B;
+    }
+
+    function rawbt(r, emp) {
+        var B = escposBytes(r, emp);
+        var bin = '';
+        B.forEach(function (b) { bin += String.fromCharCode(b); });
+        location.href = 'rawbt:base64,' + btoa(bin);
+    }
+
     function enviar(file, r) {
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
             navigator.share({ files: [file], title: 'Recibo ' + (r.num || '') }).catch(function () {});
@@ -182,8 +252,10 @@ var TicketRecibo = (function () {
         var r = {};
         try { r = JSON.parse(btn.dataset.recibo || '{}'); } catch (err) {}
         var emp = btn.dataset.emp || 'Contamos';
-        (btn.dataset.tkt === 'pdf' ? pdf : png)(r, emp);
+        if (btn.dataset.tkt === 'pdf') pdf(r, emp);
+        else if (btn.dataset.tkt === 'rawbt') rawbt(r, emp);
+        else png(r, emp);
     });
 
-    return { png: png, pdf: pdf };
+    return { png: png, pdf: pdf, rawbt: rawbt };
 })();

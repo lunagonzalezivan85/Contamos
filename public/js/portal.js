@@ -129,6 +129,13 @@
             TicketRecibo.pdf(m._recibo, emp2);
             return;
         }
+
+        // Térmica → ESC/POS texto puro via RawBT (fuente nativa de la PT-210)
+        if (e.target.closest('#rec-rawbt')) {
+            var emp3 = (m.querySelector('#rec-emp') || {}).textContent || 'Contamos';
+            TicketRecibo.rawbt(m._recibo, emp3);
+            return;
+        }
     });
 
     // El action depende del crédito elegido: /portal/cobros/{id}/abonar
