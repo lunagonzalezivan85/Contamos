@@ -120,25 +120,22 @@
         if (e.target.closest('#rec-compartir')) {
             var r   = m._recibo;
             var emp = (m.querySelector('#rec-emp') || {}).textContent || 'Contamos';
-            // VT323 ≈ fuente nativa PC437 de la térmica; si no carga, Courier
-            var base = location.pathname.replace(/\/portal.*$/, '').replace(/\/[^/]*$/, '');
-            var ff = new FontFace('VT323', "url('" + location.origin + base + "/public/fonts/vt323.woff2" + "')");
-            ff.load().then(function (f) { document.fonts.add(f); dibujarTicket(r, emp, 'VT323'); })
-                     .catch(function () { dibujarTicket(r, emp, '"Courier New"'); });
+            dibujarTicket(r, emp);
             return;
         }
     });
 
-    /* Ticket térmico 58mm (384px útiles ×2 = 768 físicos, 203dpi).
-       fam = familia de fuente (VT323 o fallback monospace). */
-    function dibujarTicket(r, emp, fam) {
-        var W = 384, pad = 14;
-        var mono = fam + ', "Courier New", monospace';
-        var SEP  = '-'.repeat(40);
-        var FH   = '700 26px ' + mono,          // empresa
-            FS   = '700 20px ' + mono,          // texto normal
-            FB   = '700 22px ' + mono,          // semi-título
-            FX   = '700 44px ' + mono;          // monto
+    /* Ticket térmico 58mm — 384px exactos (1px = 1 punto, 203dpi).
+       Todo negrita Courier New: ancho fijo + bold = legible en térmica. */
+    function dibujarTicket(r, emp) {
+        var W = 384, pad = 16;
+        var mono = '"Courier New", monospace';
+        var SEP1 = '='.repeat(34);                  // separador doble (encabezado)
+        var SEP  = '-'.repeat(34);                  // separador simple
+        var FH   = '700 22px ' + mono,              // empresa
+            FS   = '700 15px ' + mono,              // texto normal
+            FB   = '700 16px ' + mono,              // semi-título
+            FX   = '700 32px ' + mono;              // monto
 
         var items = [];
         function add(t, f, a, lh, g) { items.push({ t: t, f: f, a: a, lh: lh, g: g || 0 }); }
@@ -151,26 +148,27 @@
             if (ln) add(ln, f, a, lh, g);
         }
 
-        wrap(String(emp).toUpperCase(), FH, 'center', 28, 2, 20);
-        add('RECIBO DE PAGO', FS, 'center', 22, 2);
-        add(r.num || '', FB, 'center', 26, 4);
-        add(SEP, FS, 'center', 14, 2);
+        wrap(String(emp).toUpperCase(), FH, 'center', 26, 0, 20);
+        add(SEP1, FS, 'center', 16, 4);
+        add('RECIBO DE PAGO', FB, 'center', 20, 2);
+        add(r.num || '', FH, 'center', 26, 4);
+        add(SEP, FS, 'center', 14, 4);
         [['Cliente', r.cliente], ['Credito', r.credito], ['Fecha', r.fecha],
          ['Metodo', r.metodo],  ['Estado', r.estado],  ['Gestor', r.gestor]]
-            .forEach(function (f) { wrap(f[0] + ': ' + (f[1] || '-'), FS, 'left', 22, 0, 40); });
-        if (r.saldo) wrap('Saldo pendiente: C$ ' + r.saldo, FB, 'left', 24, 0, 40);
-        add(SEP, FS, 'center', 14, 8);
-        add('MONTO PAGADO', FS, 'center', 20, 4);
-        add('C$ ' + (r.monto || ''), FX, 'center', 46, 8);
-        add(SEP, FS, 'center', 14, 2);
+            .forEach(function (f) { wrap(f[0] + ': ' + (f[1] || '-'), FS, 'left', 20, 0, 36); });
+        if (r.saldo) wrap('Saldo pend.: C$ ' + r.saldo, FS, 'left', 20, 0, 36);
+        add(SEP, FS, 'center', 14, 6);
+        add('MONTO PAGADO', FS, 'center', 18, 2);
+        add('C$ ' + (r.monto || ''), FX, 'center', 38, 6);
+        add(SEP1, FS, 'center', 16, 4);
         if (r.revision) {
-            wrap('** PAGO EN REVISION **', FB, 'center', 24, 0, 34);
-            wrap('Este comprobante no confirma el abono; se aplica cuando oficina lo valide.',
-                 FS, 'center', 19, 4, 34);
-            add(SEP, FS, 'center', 14, 2);
+            wrap('** PAGO EN REVISION **', FB, 'center', 20, 0, 34);
+            wrap('Se aplica al plan cuando oficina valide la transferencia.',
+                 FS, 'center', 17, 4, 36);
+            add(SEP, FS, 'center', 14, 4);
         }
-        add('Gracias por su pago', FS, 'center', 22, 0);
-        add('contamos.softlutionic.com', FS, 'center', 20, 0);
+        add('Gracias por su pago', FS, 'center', 20, 0);
+        add('contamos.softlutionic.com', FS, 'center', 18, 0);
 
         var H = 28;
         items.forEach(function (i) { H += i.lh + i.g; });

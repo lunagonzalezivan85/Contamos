@@ -623,6 +623,8 @@ class PagoService
             return ['ok' => true, 'pago_id' => (int) $dup['id']];
         }
 
+        $metodo = in_array($d['metodo'] ?? '', array_keys(PagoModel::METODOS), true)
+            ? $d['metodo'] : 'EFECTIVO';
         $pagoId = $this->pagos->insert([
             'tenant_id'      => $tenantId,
             'solicitud_id'   => $solId,
@@ -630,13 +632,19 @@ class PagoService
             'empleado_id'    => $empleadoId,
             'registrado_por' => $userId,
             'monto'          => $monto,
-            'metodo'         => in_array($d['metodo'] ?? '', array_keys(PagoModel::METODOS), true)
-                ? $d['metodo'] : 'EFECTIVO',
+            'metodo'         => $metodo,
             'tipo'           => $esPromesa ? PagoModel::TIPO_PROMESA : PagoModel::TIPO_PAGO,
             'fecha_hora'     => ($d['fecha_hora'] ?? '') ?: date('Y-m-d H:i:s'),
             'observacion'    => trim((string) ($d['observacion'] ?? '')) ?: null,
             'estado'         => PagoModel::REVISION,
         ]);
+
+        // Efectivo = el gestor ya tiene el dinero en mano → se aplica de
+        // inmediato. Transferencia (y promesas) quedan en REVISION hasta
+        // que oficina las valide.
+        if (!$esPromesa && $metodo === 'EFECTIVO') {
+            $this->aprobarPago($tenantId, (int) $pagoId, $userId ?? 0);
+        }
 
         return ['ok' => true, 'pago_id' => (int) $pagoId];
     }
