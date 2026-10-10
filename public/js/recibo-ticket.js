@@ -4,10 +4,23 @@
 var TicketRecibo = (function () {
     'use strict';
 
+    /* Roboto Bold empaquetada (sans gruesa ≈ FZHei de la térmica).
+       Se precarga al iniciar — si aún no llega, cae a Segoe/Arial. */
+    var famTkt = '"Segoe UI", Arial, sans-serif';
+    (function precargaFont() {
+        try {
+            var tag  = document.currentScript || document.querySelector('script[src*="recibo-ticket"]');
+            var url  = tag ? tag.src.replace(/js\/recibo-ticket\.js.*$/, 'fonts/roboto-bold.ttf') : '';
+            new FontFace('TktRoboto', "url('" + url + "')", { weight: '700' }).load()
+                .then(function (f) { document.fonts.add(f); famTkt = 'TktRoboto, Arial, sans-serif'; })
+                .catch(function () {});
+        } catch (err) {}
+    })();
+
     /* ---- PNG: 384px exactos (1px = 1 punto, 203dpi), B/N puro ---- */
     function png(r, emp) {
         var W = 384, pad = 16;
-        var mono = '"Segoe UI", Arial, sans-serif';
+        var mono = famTkt;
         var SEP1 = '='.repeat(34), SEP = '-'.repeat(34);
         var FH = '700 22px ' + mono, FS = '700 15px ' + mono,
             FB = '700 16px ' + mono, FX = '700 32px ' + mono;
@@ -59,14 +72,13 @@ var TicketRecibo = (function () {
             cx.textAlign = i.a;
             var x = i.a === 'center' ? W / 2 : pad;
             cx.fillText(i.t, x, y);
-            cx.fillText(i.t, x + 0.5, y);
             y += i.g;
         });
 
         // Umbral a B/N puro: la térmica difumina los grises del antialias
         var img = cx.getImageData(0, 0, W, H), d = img.data;
         for (var px = 0; px < d.length; px += 4) {
-            var v = d[px] < 190 ? 0 : 255;
+            var v = d[px] < 150 ? 0 : 255;
             d[px] = d[px + 1] = d[px + 2] = v;
         }
         cx.putImageData(img, 0, 0);
