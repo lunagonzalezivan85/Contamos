@@ -579,6 +579,7 @@ $titulos = [
         <div class="modal-foot">
             <button type="button" class="btn" data-close>Cerrar</button>
             <button type="button" class="btn btn-outline" id="rec-imprimir"><?= icon('printer', 14) ?> Imprimir</button>
+            <button type="button" class="btn btn-outline" id="rec-pdf"><?= icon('file-text', 14) ?> PDF</button>
             <button type="button" class="btn btn-primary" id="rec-compartir"><?= icon('send', 14) ?> Compartir</button>
         </div>
     </div>
