@@ -656,10 +656,13 @@ class PagoService
         if (!$pago) return null;
         $tenant = (new \App\Models\TenantModel())->find($tenantId);
 
-        // Saldo vivo del crédito (cuotas pendientes). Si el pago sigue en
-        // REVISION aún no se descontó del plan — se muestra el saldo actual.
+        // Saldo del crédito tras este pago: en REVISION aún no se descontó
+        // del plan — se descuenta para mostrar el saldo proyectado.
         $sol   = $this->solicitudes->where('tenant_id', $tenantId)->find((int) $pago['solicitud_id']);
         $saldo = $sol ? $this->saldoCredito($sol) : null;
+        if ($saldo !== null && ($pago['estado'] ?? '') === PagoModel::REVISION) {
+            $saldo = max(0, round($saldo - (float) $pago['monto'], 2));
+        }
 
         return ['pago' => $pago, 'tenant' => $tenant, 'saldo' => $saldo];
     }

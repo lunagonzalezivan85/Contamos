@@ -252,6 +252,7 @@ if (_nBtn && _nPanel) {
 }
 </script>
 
+<script src="<?= v_asset('js/recibo-ticket.js') ?>"></script>
 <script src="<?= v_asset('js/portal.js') ?>"></script>
 <?= $this->renderSection('scripts') ?>
 </body>
