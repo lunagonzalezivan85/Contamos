@@ -121,11 +121,11 @@
             var r   = m._recibo;
             var W   = 384, pad = 18;
             var emp = (m.querySelector('#rec-emp') || {}).textContent || 'Contamos';
-            var SEP = '-'.repeat(46);
-            var FH  = '700 18px "Courier New",monospace',
-                FS  = '12px "Courier New",monospace',
-                FB  = '700 13px "Courier New",monospace',
-                FX  = '700 30px "Courier New",monospace';
+            var SEP = '-'.repeat(38);
+            var FH  = '700 20px "Courier New",monospace',
+                FS  = '700 14px "Courier New",monospace',   // todo bold — la térmica lava el texto fino
+                FB  = '700 15px "Courier New",monospace',
+                FX  = '700 34px "Courier New",monospace';
 
             var items = [];
             function add(t, f, a, lh, g) { items.push({ t: t, f: f, a: a, lh: lh, g: g || 0 }); }
@@ -138,25 +138,25 @@
                 if (ln) add(ln, f, a, lh, g);
             }
 
-            wrap(emp.toUpperCase(), FH, 'center', 22, 2, 22);
-            add('RECIBO DE PAGO', FS, 'center', 18, 2);
-            add(r.num || '', FB, 'center', 20, 4);
-            add(SEP, FS, 'center', 12, 2);
+            wrap(emp.toUpperCase(), FH, 'center', 24, 2, 20);
+            add('RECIBO DE PAGO', FS, 'center', 20, 2);
+            add(r.num || '', FB, 'center', 22, 4);
+            add(SEP, FS, 'center', 14, 2);
             [['Cliente', r.cliente], ['Credito', r.credito], ['Fecha', r.fecha],
              ['Metodo', r.metodo],  ['Estado', r.estado]]
-                .forEach(function (f) { wrap(f[0] + ': ' + (f[1] || '-'), FS, 'left', 17, 0, 42); });
-            add(SEP, FS, 'center', 12, 6);
-            add('MONTO PAGADO', FS, 'center', 16, 2);
-            add('C$ ' + (r.monto || ''), FX, 'center', 36, 6);
-            add(SEP, FS, 'center', 12, 2);
+                .forEach(function (f) { wrap(f[0] + ': ' + (f[1] || '-'), FS, 'left', 20, 0, 34); });
+            add(SEP, FS, 'center', 14, 6);
+            add('MONTO PAGADO', FS, 'center', 18, 2);
+            add('C$ ' + (r.monto || ''), FX, 'center', 40, 6);
+            add(SEP, FS, 'center', 14, 2);
             if (r.revision) {
-                wrap('** PAGO EN REVISION **', FB, 'center', 18, 0, 42);
+                wrap('** PAGO EN REVISION **', FB, 'center', 20, 0, 34);
                 wrap('Este comprobante no confirma el abono; se aplica cuando oficina lo valide.',
-                     FS, 'center', 15, 4, 42);
-                add(SEP, FS, 'center', 12, 2);
+                     FS, 'center', 17, 4, 34);
+                add(SEP, FS, 'center', 14, 2);
             }
-            add('Gracias por su pago', FS, 'center', 18, 0);
-            add('contamos.softlutionic.com', FS, 'center', 16, 0);
+            add('Gracias por su pago', FS, 'center', 20, 0);
+            add('contamos.softlutionic.com', FS, 'center', 18, 0);
 
             var H = 28;
             items.forEach(function (i) { H += i.lh + i.g; });
@@ -171,7 +171,10 @@
                 y += i.lh;
                 cx.font = i.f;
                 cx.textAlign = i.a;
-                cx.fillText(i.t, i.a === 'center' ? W / 2 : pad, y);
+                var x = i.a === 'center' ? W / 2 : pad;
+                // doble pasada → más densidad de tinta en térmicas
+                cx.fillText(i.t, x, y);
+                cx.fillText(i.t, x + 0.6, y);
                 y += i.g;
             });
 
