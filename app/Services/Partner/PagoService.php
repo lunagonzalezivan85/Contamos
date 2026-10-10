@@ -1108,11 +1108,14 @@ class PagoService
      */
     public function cobrosHoyDelGestor(int $tenantId, int $empleadoId): array
     {
-        return $this->pagos
-            ->select('pagos.*, personas.nombres, personas.apellidos, solicitudes.codigo_credito')
+        $rows = $this->pagos
+            ->select('pagos.*, personas.nombres, personas.apellidos, solicitudes.codigo_credito,
+                      cobrador.nombres AS cob_nombres, cobrador.apellidos AS cob_apellidos')
             ->join('solicitudes', 'solicitudes.id = pagos.solicitud_id')
             ->join('clientes', 'clientes.id = solicitudes.cliente_id')
             ->join('personas', 'personas.id = clientes.persona_id')
+            ->join('empleados emp', 'emp.id = pagos.empleado_id', 'left')
+            ->join('personas cobrador', 'cobrador.id = emp.persona_id', 'left')
             ->where('pagos.tenant_id', $tenantId)
             ->where('pagos.empleado_id', $empleadoId)
             ->where('pagos.tipo', PagoModel::TIPO_PAGO)
@@ -1122,6 +1125,17 @@ class PagoService
             ->where('DATE(' . $this->db->prefixTable('pagos') . '.fecha_hora)', date('Y-m-d'))
             ->orderBy('pagos.fecha_hora', 'DESC')
             ->findAll();
+
+        foreach ($rows as &$p) {
+            $saldo = $this->cuotas->saldoDe((int) $p['solicitud_id']);
+            // REVISION aún no se aplica → el saldo mostrado descuenta este pago
+            if (($p['estado'] ?? '') === PagoModel::REVISION) {
+                $saldo -= (float) $p['monto'];
+            }
+            $p['saldo']  = max(0, round($saldo, 2));
+            $p['gestor'] = trim(($p['cob_nombres'] ?? '') . ' ' . ($p['cob_apellidos'] ?? ''));
+        }
+        return $rows;
     }
 
     /**

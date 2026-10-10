@@ -308,9 +308,11 @@ $titulos = [
                                                 'cliente' => trim($p['nombres'] . ' ' . $p['apellidos']),
                                                 'credito' => $p['codigo_credito'] ?? '#' . $p['solicitud_id'],
                                                 'monto'   => number_format((float) $p['monto'], 2),
-                                                'fecha'   => date('d/m/Y h:i a', strtotime($p['fecha_hora'])),
+                                                'fecha'   => date('d/m/Y', strtotime($p['fecha_hora'])),
                                                 'metodo'  => $metodos[$p['metodo']] ?? $p['metodo'],
                                                 'estado'  => $lblEstado[$p['estado']] ?? $p['estado'],
+                                                'gestor'  => $p['gestor'] ?? '',
+                                                'saldo'   => isset($p['saldo']) ? number_format((float) $p['saldo'], 2) : '',
                                                 'revision' => $p['estado'] === 'REVISION',
                                                 'url'     => base_url($slug . '/portal/cobros/' . $p['id'] . '/recibo'),
                                             ]), 'attr') ?>">

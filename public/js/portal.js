@@ -156,8 +156,9 @@
         add(r.num || '', FB, 'center', 26, 4);
         add(SEP, FS, 'center', 14, 2);
         [['Cliente', r.cliente], ['Credito', r.credito], ['Fecha', r.fecha],
-         ['Metodo', r.metodo],  ['Estado', r.estado]]
+         ['Metodo', r.metodo],  ['Estado', r.estado],  ['Gestor', r.gestor]]
             .forEach(function (f) { wrap(f[0] + ': ' + (f[1] || '-'), FS, 'left', 22, 0, 40); });
+        if (r.saldo) wrap('Saldo pendiente: C$ ' + r.saldo, FB, 'left', 24, 0, 40);
         add(SEP, FS, 'center', 14, 8);
         add('MONTO PAGADO', FS, 'center', 20, 4);
         add('C$ ' + (r.monto || ''), FX, 'center', 46, 8);
