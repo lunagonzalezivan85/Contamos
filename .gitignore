@@ -152,3 +152,7 @@ deploy.config.ps1
 .purge-sed.sed
 
 .playwright-mcp/
+
+/writable/backups/*
+!/writable/backups/index.html
+/writable/estructura_*.sql
